@@ -15,7 +15,7 @@
     Encryption needs a secure context (HTTPS), e.g. GitHub Pages.
   -->
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+        content="default-src 'none'; script-src 'self' 'sha256-f9EFsFdAJy25peE1G7IW3vVK9k7zBBtSERhFjoAS3q4='; style-src 'sha256-SU0hkC/aH1ljuSf1zqYJwX7ioV6WfVG/ngprrmHzoW4=' 'sha256-9dywy1vNfMO3XZ0p2JhjEMSA3hPrU7tCJVaXflImQZg='; img-src 'self' data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
   <title>A320 Fleet Configuration</title>
 
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -28,17 +28,17 @@
 
   <style>
   :root {
-    --blue-bg:#0b3f86; --blue-deep:#072e63; --blue-bar:#0a377a;
-    --panel:rgba(255,255,255,0.08); --panel-2:rgba(255,255,255,0.14); --line:rgba(255,255,255,0.20);
-    --ink:#fff; --ink-soft:rgba(255,255,255,0.72); --accent:#8dc0ff; --good:#7ef0a6; --amber:#ffcf6b; --danger:#ff9a9d;
+    --blue-bg:#081a3a; --blue-deep:#0a1f45; --blue-bar:#0b224d;
+    --panel:rgba(255,255,255,0.06); --panel-2:rgba(255,255,255,0.12); --line:rgba(255,255,255,0.16);
+    --ink:#eaf1fb; --ink-soft:rgba(234,241,251,0.66); --accent:#6cace4; --good:#5ad19b; --amber:#ffcf6b; --danger:#ff8a90;
     --sans:"Helvetica Neue",Helvetica,Arial,"Segoe UI",system-ui,sans-serif;
     --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace; --sheet-w:430px;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; margin: 0; }
-  body { font-family: var(--sans); color: var(--ink); background: var(--blue-bg); display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+  body { font-family: var(--sans); color: var(--ink); background: linear-gradient(180deg, #0b224d 0%, #081a3a 45%, #06122a 100%) fixed; display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
 
-  .app-bar { display: flex; align-items: center; gap: 10px 16px; flex-wrap: wrap; padding: 10px 16px; padding-top: calc(10px + env(safe-area-inset-top)); padding-left: calc(16px + env(safe-area-inset-left)); padding-right: calc(16px + env(safe-area-inset-right)); background: var(--blue-bar); border-bottom: 2px solid rgba(255,255,255,0.25); position: sticky; top: 0; z-index: 50; }
+  .app-bar { display: flex; align-items: center; gap: 10px 16px; flex-wrap: wrap; padding: 10px 16px; padding-top: calc(10px + env(safe-area-inset-top)); padding-left: calc(16px + env(safe-area-inset-left)); padding-right: calc(16px + env(safe-area-inset-right)); background: linear-gradient(rgba(11,34,77,0.84), rgba(9,26,60,0.92)), url("carbon.png"); background-size: cover; background-position: center; border-bottom: 1px solid rgba(108,172,228,0.40); position: sticky; top: 0; z-index: 50; }
   .brand { display: flex; align-items: center; gap: 10px; }
   .brand-mark { width: 28px; height: 28px; border-radius: 50%; background: #fff; position: relative; flex: 0 0 auto; }
   .brand-mark::after { content: ""; position: absolute; left: 0; right: 0; margin: auto; top: 7px; width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-bottom: 12px solid var(--blue-bg); }
@@ -70,14 +70,16 @@
   main#stage { flex: 1 1 auto; padding: 14px 12px 40px; display: flex; justify-content: center; }
   .sheet { width: var(--sheet-w); max-width: 100%; background: var(--blue-deep); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; align-self: flex-start; box-shadow: 0 10px 30px rgba(0,0,0,0.25); }
   .sheet[hidden] { display: none; }
-  .sheet-head { background: linear-gradient(180deg,#0a377a,#072e63); padding: 16px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+  .sheet-head { background: linear-gradient(180deg,#0e2a5c,#0a1f45); padding: 16px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
   .sheet-head .reg { font-size: 28px; font-weight: 700; letter-spacing: 2px; font-family: var(--mono); }
   .sheet-head .model { font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
   .sheet-head .head-right { text-align: right; font-size: 11px; line-height: 1.5; color: var(--ink-soft); }
   .sheet-head .head-right b { color: var(--ink); font-weight: 700; letter-spacing: .4px; }
   .sheet-body { padding: 6px 12px 16px; }
   .section { margin-top: 16px; }
-  .section > h3 { margin: 0 0 8px; font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--accent); border-bottom: 1px solid var(--line); padding-bottom: 5px; }
+  .section > h3 { margin: 0 0 10px; font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--ink); position: relative; padding-bottom: 9px; }
+  .section > h3::after { content: ""; position: absolute; left: 0; bottom: 0; width: 28px; height: 3px; background: var(--accent); border-radius: 2px; }
+  .accentbar { width: 34px; height: 3px; background: var(--accent); border-radius: 2px; margin: 3px 0 1px; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .field { display: flex; flex-direction: column; gap: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; min-width: 0; }
   .field .label { font-size: 11px; color: var(--ink-soft); }
@@ -92,7 +94,7 @@
   .empty { align-self: center; text-align: center; color: var(--ink-soft); margin-top: 16vh; max-width: 340px; }
   .empty h2 { color: var(--ink); font-weight: 600; }
 
-  .footnote { padding: 9px 16px; padding-bottom: calc(9px + env(safe-area-inset-bottom)); font-size: 10.5px; color: var(--ink-soft); background: var(--blue-bar); border-top: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .footnote { padding: 9px 16px; padding-bottom: calc(9px + env(safe-area-inset-bottom)); font-size: 10.5px; color: var(--ink-soft); background: linear-gradient(rgba(11,34,77,0.88), rgba(6,18,42,0.95)), url("carbon.png"); background-size: cover; background-position: center; border-top: 1px solid rgba(108,172,228,0.32); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   button.linklike { border: none; background: transparent; color: var(--accent); font-size: 10.5px; padding: 2px 4px; text-decoration: underline; cursor: pointer; }
 
   #toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom)); background: #fff; color: var(--blue-bg); padding: 11px 16px; border-radius: 10px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 86vw; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
@@ -119,7 +121,7 @@
   @page { size: A4 portrait; margin: 12mm; }
   @media print {
     body { background: #fff; color: #000; }
-    .app-bar, .updatebar, .footnote, #toast, .gate { display: none !important; }
+    .app-bar, .updatebar, .footnote, #toast, .gate, .hero { display: none !important; }
     main#stage { display: block; padding: 0; }
     .sheet { width: 100%; box-shadow: none; border: 1px solid #999; border-radius: 0; background: #fff; color: #000; page-break-after: always; break-after: page; }
     .sheet[hidden] { display: block !important; }
@@ -156,8 +158,9 @@
     <div class="gate-card">
       <div class="gate-head"><span class="brand-mark" aria-hidden="true"></span><h2 id="pwTitle">Fleet password</h2></div>
       <div class="gate-body">
-        <p>The fleet data is encrypted. Enter the password to unlock it on this device. It is remembered here until you tap <b>Lock</b>.</p>
+        <p>The fleet data is encrypted. Enter the password to unlock it on this device.</p>
         <input type="password" id="pwInput" placeholder="Password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <label class="pw-remember"><input type="checkbox" id="pwRemember" checked> Remember on this device (uncheck on shared devices)</label>
         <p class="pw-err" id="pwErr" hidden>Incorrect password.</p>
       </div>
       <div class="gate-actions"><button id="pwBtn" class="primary">Unlock</button></div>
@@ -178,6 +181,8 @@
     </div>
   </header>
 
+  <div class="hero" aria-hidden="true"></div>
+
   <main id="stage"></main>
 
   <footer class="footnote">
@@ -185,7 +190,7 @@
     <div class="foot-links">
       <button id="btnAbout" class="footbtn" type="button">About</button>
       <button id="btnVerify" class="footbtn" type="button">Verify</button>
-      <a class="footbtn" href="mailto:support@aviationcyber.academy?subject=Feedback%20about%20the%20A320%20fleet%20config%20app">Feedback</a>
+      <a class="footbtn" href="mailto:ddb@aviationcyber.academy?subject=Feedback%20about%20the%20A320%20fleet%20config%20app">Feedback</a>
       <button id="btnDisclaimer" class="footbtn" type="button">Disclaimer</button>
     </div>
   </footer>
@@ -204,7 +209,7 @@
 
         <h3>Version numbering</h3>
         <p>Two versions travel with the app. The <b>app version</b> is the software itself and changes only when the app is rebuilt. The <b>data version</b> is the fleet database, shown as a version number and a date, and it changes every time I publish new fleet data. You can see both in the disclaimer, along with a fingerprint of the exact data you are looking at, so two people can confirm in one glance that they are reading the same release.</p>
-        <p>App version <b><span id="aboutAppVer">0.3</span></b>. The current data version is shown in the top bar and in the disclaimer.</p>
+        <p>App version <b><span id="aboutAppVer">0.7</span></b>. The current data version is shown in the top bar and in the disclaimer.</p>
 
         <h3>How the encryption works</h3>
         <p>The fleet data lives in a public place, so it is encrypted before it ever leaves my hands. When I publish, the data is sealed with AES using a 256 bit key in GCM mode. The key is not stored anywhere. It is derived from a password using PBKDF2 with 200,000 iterations and a random salt, which makes guessing the password slow and expensive. What sits in the repository is only the sealed result, unreadable without the password.</p>
@@ -229,6 +234,16 @@
     .foot-links { display: flex; gap: 6px; align-items: stretch; }
     .footbtn { flex: 1 1 0; text-align: center; font-family: var(--sans); font-size: 11px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 8px 4px; cursor: pointer; text-decoration: none; }
     .footbtn:hover { background: var(--panel-2); }
+    .footbtn::after { content: "\203A"; margin-left: 7px; color: var(--accent); font-weight: 700; }
+    .hero { flex: 0 0 auto; height: 88px; border-bottom: 1px solid rgba(108,172,228,0.18);
+      background:
+        radial-gradient(130% 180% at 14% 20%, rgba(108,172,228,0.34), rgba(108,172,228,0) 55%),
+        repeating-linear-gradient(58deg, rgba(108,172,228,0.07) 0 1px, transparent 1px 26px),
+        linear-gradient(rgba(9,26,60,0.62), rgba(6,18,42,0.82)),
+        url("carbon.png");
+      background-size: cover, auto, cover, cover; background-position: center; }
+    .pw-remember { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 12px; color: var(--ink-soft); cursor: pointer; }
+    .pw-remember input { width: 18px; height: 18px; accent-color: var(--accent); }
     .statusdot { width: 10px; height: 10px; border-radius: 50%; background: var(--ink-soft); flex: 0 0 auto; }
     .statusdot.state-checking { background: var(--accent); animation: pulse 1s infinite; }
     .statusdot.state-live { background: var(--good); }
@@ -240,6 +255,10 @@
     .eqcols { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: start; }
     .eqcol { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
     .sheet-head .subline { font-size: 12.5px; color: var(--ink-soft); font-family: var(--mono); overflow-wrap: anywhere; }
+    .bval { font-weight: 700; }
+    .bval.yes { color: var(--good); }
+    .bval.no { color: var(--danger); }
+    .bval.na { color: var(--ink-soft); }
     .about-body h3 { font-size: 13px; color: var(--accent); margin: 16px 0 6px; letter-spacing: .3px; }
     .about-body h3:first-child { margin-top: 0; }
     .about-body p { font-size: 13px; line-height: 1.6; }
@@ -252,28 +271,32 @@
   (function () {
     /* ===== Encrypted update source (public repo holds ciphertext only) ===== */
     var CONFIG_URL = "https://raw.githubusercontent.com/BBJcaptain/fleet-config/main/fleet-config.enc";
-    var APP_VERSION = "0.3";
+    var APP_VERSION = "0.7";
     var CACHE_KEY  = "a320config.enc.cache";     // { text, syncedAt }
     var PW_KEY     = "a320config.pw";            // lightly obfuscated password (device convenience only)
     var DISCLAIMER_VERSION = "2026-07-13", DISCLAIMER_KEY = "a320config.disclaimerAccepted";
     var AUTO_LOCK_MS = 15 * 60 * 1000;   // auto lock after 15 minutes of inactivity; change to suit
     var lockTimer = null, lastActivity = 0;
+    var SIGN_PUB = "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEw9J9dWKaj8l98c1hg2nH9jhQheAM/YgVx3GuVJa2qj9jAGoCG3xl1VlnvHg5/kqpIDl6XJMyomMuTe/u5+/lIA==";            // ECDSA P-256 public key (SPKI base64); verifies data authorship
+    var FAIL_KEY = "a320config.pwfail";  // wrong-password backoff state
+    var currentPw = null, _pubKey = null;
 
     var SCHEMA = [
       { section: "Performance", cols: true, fields: [
         { key: "mlw_t", label: "MLW", unit: "T", col: "left" },
         { key: "takeoff_tailwind_kts", label: "T/O Tailwind limit", unit: "kts", col: "left" },
         { key: "landing_tailwind_kts", label: "LDG Tailwind limit", unit: "kts", col: "left" },
-        { key: "narrow_runway_approved", label: "Narrow RWY Approved", type: "bool", col: "right" },
+        { key: "narrow_runway_approved", label: "Narrow RWY", type: "bool", on: "Approved", off: "Not Approved", col: "right" },
+        { key: "se_taxi_no_apu", label: "SE Taxi w/o APU", type: "bool", on: "Allowed", off: "Not Allowed", col: "right" },
         { key: "max_altitude_autoland", label: "Max autoland ALT", unit: "ft", col: "right" },
         { key: "noise_chapter", label: "Noise Certification", col: "right" }
       ]},
       { section: "Equipment", cols: true, fields: [
         { key: "brk_fan", label: "BRK FAN", type: "bool", col: "left" },
-        { key: "winglets", label: "Winglets", type: "bool", col: "left" },
+        { key: "winglets", label: "Sharklets", type: "bool", on: "Installed", off: "Not Installed", col: "left" },
         { key: "engine_type", label: "Engines", col: "left" },
         { key: "cargo_heat", label: "Cargo heat", type: "bool", col: "left" },
-        { key: "headset_plug", label: "Headset", col: "left" },
+        { key: "headset_plug", label: "Headset Plug", col: "left" },
         { key: "acars", label: "ACARS", col: "right" },
         { key: "init", label: "INIT* FLT PL Retrieval", col: "right" },
         { key: "adiru_type", label: "ADIRU", col: "right" },
@@ -300,6 +323,8 @@
         return Array.prototype.map.call(new Uint8Array(buf), function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
       });
     }
+    function pubKey() { if (!_pubKey) { _pubKey = crypto.subtle.importKey("spki", b64ToBytes(SIGN_PUB), { name: "ECDSA", namedCurve: "P-256" }, false, ["verify"]); } return _pubKey; }
+    function verifySig(pt, sigB64) { return pubKey().then(function (k) { return crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, k, b64ToBytes(sigB64), new TextEncoder().encode(pt)); }); }
     function decryptEnvelope(text, password) {
       var env;
       try { env = JSON.parse(text); } catch (e) { return Promise.reject(new Error("bad-file")); }
@@ -308,13 +333,20 @@
       return crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"])
         .then(function (bk) { return crypto.subtle.deriveKey({ name: "PBKDF2", salt: salt, iterations: iter, hash: "SHA-256" }, bk, { name: "AES-GCM", length: 256 }, false, ["decrypt"]); })
         .then(function (key) { return crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, ct); })
-        .then(function (buf) { return new TextDecoder().decode(buf); });
+        .then(function (buf) {
+          var pt = new TextDecoder().decode(buf);
+          if (!env.sig || !SIGN_PUB || SIGN_PUB.indexOf("__") === 0) return pt;   // unsigned file or key not configured
+          return verifySig(pt, env.sig).then(function (ok) { if (!ok) throw new Error("bad-signature"); return pt; });
+        });
     }
 
-    /* ---- Password store (device convenience only, not real protection) ---- */
-    function getPw() { try { var v = window.localStorage.getItem(PW_KEY); return v ? decodeURIComponent(escape(atob(v))) : null; } catch (e) { return null; } }
-    function setPw(pw) { try { window.localStorage.setItem(PW_KEY, btoa(unescape(encodeURIComponent(pw)))); } catch (e) {} }
-    function clearPw() { try { window.localStorage.removeItem(PW_KEY); } catch (e) {} }
+    /* ---- Password: in-memory for the session, optionally remembered on device ---- */
+    function readStoredPw() { try { var v = window.localStorage.getItem(PW_KEY); return v ? decodeURIComponent(escape(atob(v))) : null; } catch (e) { return null; } }
+    function getPw() { return currentPw || readStoredPw(); }
+    function storePw(pw) { try { window.localStorage.setItem(PW_KEY, btoa(unescape(encodeURIComponent(pw)))); } catch (e) {} }
+    function clearStoredPw() { try { window.localStorage.removeItem(PW_KEY); } catch (e) {} }
+    function clearPw() { currentPw = null; clearStoredPw(); }
+    function wipeCache() { try { window.localStorage.removeItem(CACHE_KEY); } catch (e) {} }
 
     /* ---- Cache (ciphertext only; plaintext never persisted) ---- */
     function readCache() { try { var raw = window.localStorage.getItem(CACHE_KEY); return raw ? JSON.parse(raw) : null; } catch (e) { return null; } }
@@ -331,7 +363,7 @@
     function parseConfig(text) { var p = JSON.parse(text); if (!p || typeof p !== "object" || !Array.isArray(p.aircraft)) throw new Error("no aircraft list"); return normalise(p); }
 
     function displayScalar(v) { return (v === null || v === undefined || v === "") ? "—" : String(v); }
-    function boolChip(v) { if (v === true) return el("span", { cls: "chip yes", text: "YES" }); if (v === false) return el("span", { cls: "chip no", text: "NO" }); return el("span", { cls: "chip na", text: "—" }); }
+    function boolText(v, on, off) { on = on || "Installed"; off = off || "N/A"; if (v === true) return el("span", { cls: "bval yes", text: on }); if (v === false) return el("span", { cls: "bval no", text: off }); return el("span", { cls: "bval na", text: "—" }); }
     function fmtRel(d) { if (!d) return "never"; var s = Math.max(0, (Date.now() - d.getTime()) / 1000); if (s < 60) return "just now"; if (s < 3600) return Math.floor(s / 60) + " min ago"; if (s < 86400) return Math.floor(s / 3600) + " h ago"; return Math.floor(s / 86400) + " d ago"; }
 
     /* ---- Rendering ---- */
@@ -358,10 +390,12 @@
       var sheet = el("div", { cls: "sheet" });
       var head = el("div", { cls: "sheet-head" });
       head.appendChild(el("div", { cls: "reg", text: a.registration || "(no registration)" }));
+      head.appendChild(el("div", { cls: "accentbar" }));
       var sub = [];
       if (a.model) sub.push(String(a.model));
       sub.push("MSN " + displayScalar(a.msn));
-      sub.push("Built " + displayScalar(a.build_date));
+      sub.push("First Flight " + displayScalar(a.first_flight));
+      if (a.first_owner) sub.push("First Owner " + a.first_owner);
       head.appendChild(el("div", { cls: "subline", text: sub.join("  ·  ") }));
       sheet.appendChild(head);
       var body = el("div", { cls: "sheet-body" });
@@ -386,7 +420,7 @@
       if (f.type === "textarea") { var w = el("div"); w.appendChild(el("div", { cls: "remarks-box", text: (a[f.key] === undefined || a[f.key] === "" || a[f.key] === null) ? "—" : String(a[f.key]) })); return w; }
       var row = el("div", { cls: "field" }); row.appendChild(el("div", { cls: "label", text: f.label }));
       var v = el("div", { cls: "value" });
-      if (f.type === "bool") { v.appendChild(boolChip(a[f.key] === undefined ? null : a[f.key])); }
+      if (f.type === "bool") { v.appendChild(boolText(a[f.key] === undefined ? null : a[f.key], f.on, f.off)); }
       else { var txt = displayScalar(a[f.key]); if (f.unit && txt !== "—") txt = txt + " " + f.unit; v.textContent = txt; }
       row.appendChild(v); return row;
     }
@@ -436,7 +470,7 @@
       if (cache && cache.text) {
         chain = decryptEnvelope(cache.text, pw)
           .then(function (pt) { return applyPlaintext(pt, "cached", cache.syncedAt).then(function () { shown = true; setStatus("checking"); }); })
-          .catch(function () { if (fromGate) throw new Error("wrong-pw"); });
+          .catch(function (e) { if (fromGate) throw new Error(e && e.message === "bad-signature" ? "bad-signature" : "wrong-pw"); });
       }
       return chain.then(function () {
         setStatus("checking");
@@ -444,11 +478,12 @@
           return decryptEnvelope(text, pw).then(function (pt) {
             return applyPlaintext(pt, "live", new Date().toISOString()).then(function () { writeCache(text); shown = true; setStatus("live"); });
           }).catch(function (e) {
+            if (e && e.message === "bad-signature") { if (!shown && fromGate) throw new Error("bad-signature"); setStatus("error"); return; }
             if (!shown && fromGate) throw new Error("wrong-pw");   // no cache and wrong password
             setStatus("error");
           });
         }).catch(function (fetchErr) {
-          if (fetchErr && fetchErr.message === "wrong-pw") throw fetchErr;
+          if (fetchErr && (fetchErr.message === "wrong-pw" || fetchErr.message === "bad-signature")) throw fetchErr;
           if (shown) setStatus("offline");
           else if (fromGate) throw new Error("offline-firstrun");
           else setStatus("offline");
@@ -463,11 +498,30 @@
     function closeDisclaimer() { byId("disclaimerGate").hidden = true; }
 
     /* ---- Password gate ---- */
-    function openPwGate(errMsg) { byId("pwErr").hidden = !errMsg; if (errMsg) byId("pwErr").textContent = errMsg; byId("pwInput").value = ""; byId("pwGate").hidden = false; setTimeout(function () { byId("pwInput").focus(); }, 50); }
+    function openPwGate(errMsg) { byId("pwErr").hidden = !errMsg; if (errMsg) byId("pwErr").textContent = errMsg; byId("pwInput").value = ""; byId("pwGate").hidden = false; setTimeout(function () { byId("pwInput").focus(); }, 50); enforceBackoff(); }
     function closePwGate() { byId("pwGate").hidden = true; }
 
     /* ---- Auto lock after inactivity ---- */
-    function doLock(msg) { if (lockTimer) { clearTimeout(lockTimer); lockTimer = null; } clearPw(); openPwGate(msg || null); }
+    function doLock(msg) { if (lockTimer) { clearTimeout(lockTimer); lockTimer = null; } clearPw(); wipeCache(); openPwGate(msg || null); }
+
+    /* ---- Wrong-password backoff (raises the cost of guessing) ---- */
+    function getFail() { try { return JSON.parse(window.localStorage.getItem(FAIL_KEY) || "{}") || {}; } catch (e) { return {}; } }
+    function setFail(o) { try { window.localStorage.setItem(FAIL_KEY, JSON.stringify(o)); } catch (e) {} }
+    function clearFail() { try { window.localStorage.removeItem(FAIL_KEY); } catch (e) {} }
+    function backoffMs(n) { return n < 3 ? 0 : Math.min(30000, (n - 2) * 5000); }
+    var cdTimer = null;
+    function enforceBackoff() {
+      var until = getFail().until || 0, btn = byId("pwBtn");
+      if (cdTimer) { clearInterval(cdTimer); cdTimer = null; }
+      if (until <= Date.now()) { btn.disabled = false; return; }
+      btn.disabled = true;
+      var tick = function () {
+        var left = Math.ceil((getFail().until - Date.now()) / 1000);
+        if (left <= 0) { clearInterval(cdTimer); cdTimer = null; btn.disabled = false; byId("pwErr").hidden = true; }
+        else { byId("pwErr").hidden = false; byId("pwErr").textContent = "Too many attempts. Try again in " + left + "s."; }
+      };
+      tick(); cdTimer = setInterval(tick, 250);
+    }
     function resetLockTimer() {
       lastActivity = Date.now();
       if (lockTimer) clearTimeout(lockTimer);
@@ -476,19 +530,22 @@
     }
 
     function submitPassword() {
+      if ((getFail().until || 0) > Date.now()) { enforceBackoff(); return; }   // still backing off
       var pw = byId("pwInput").value;
       if (!pw) { openPwGate("Enter the password."); return; }
       if (!cryptoOk()) { openPwGate("Encryption needs HTTPS. Open the hosted link (https)."); return; }
+      var remember = byId("pwRemember").checked;
       byId("pwBtn").disabled = true;
       unlock(pw, true).then(function (shown) {
         byId("pwBtn").disabled = false;
-        if (shown) { setPw(pw); closePwGate(); resetLockTimer(); }
+        if (shown) { currentPw = pw; if (remember) storePw(pw); else clearStoredPw(); clearFail(); closePwGate(); resetLockTimer(); }
         else { openPwGate("Could not load. Check your connection, then try again."); }
       }).catch(function (err) {
         byId("pwBtn").disabled = false;
-        if (err && err.message === "wrong-pw") openPwGate("Incorrect password.");
-        else if (err && err.message === "offline-firstrun") openPwGate("No connection. Connect once to load and verify the password.");
-        else openPwGate("Something went wrong. Try again.");
+        if (err && err.message === "bad-signature") { openPwGate("Data failed the authenticity check. It may have been tampered with. Contact the administrator."); return; }
+        if (err && err.message === "wrong-pw") { var f = getFail(); f.count = (f.count || 0) + 1; f.until = Date.now() + backoffMs(f.count); setFail(f); openPwGate("Incorrect password."); return; }
+        if (err && err.message === "offline-firstrun") { openPwGate("No connection. Connect once to load and verify the password."); return; }
+        openPwGate("Something went wrong. Try again.");
       });
     }
 
@@ -507,7 +564,7 @@
     function init() {
       byId("jump").addEventListener("change", function (e) { go(Number(e.target.value)); });
       byId("btnVerify").addEventListener("click", function () { var pw = getPw(); if (pw) { setStatus("checking"); unlock(pw, false); } else openPwGate(); });
-      byId("btnLock").addEventListener("click", function () { clearPw(); toast("Locked. Password required next time."); openPwGate(); });
+      byId("btnLock").addEventListener("click", function () { clearPw(); wipeCache(); toast("Locked. Password and offline copy cleared."); openPwGate(); });
       byId("btnDisclaimer").addEventListener("click", function () { openDisclaimer(); });
       byId("btnAbout").addEventListener("click", openAbout);
       byId("aboutClose").addEventListener("click", closeAbout);
