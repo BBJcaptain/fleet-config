@@ -173,7 +173,7 @@
   <header class="app-bar">
     <div class="brand">
       <span class="brand-mark" aria-hidden="true"></span>
-      <span class="brand-text"><span class="brand-title" id="appTitle">Fleet Configuration</span><span class="brand-sub" id="appVersion"></span></span>
+      <span class="brand-text"><span class="brand-title" id="appTitle">Fleet Configuration</span></span>
     </div>
     <div class="pager" aria-label="Aircraft selection">
       <select id="jump" title="Select aircraft" aria-label="Select aircraft"></select>
@@ -219,7 +219,7 @@
 
         <h3>Version numbering</h3>
         <p>Two versions travel with the app. The <b>app version</b> is the software itself and changes only when the app is rebuilt. The <b>data version</b> is the fleet database, shown as a version number and a date, and it changes every time I publish new fleet data. You can see both in the disclaimer, along with a fingerprint of the exact data you are looking at, so two people can confirm in one glance that they are reading the same release.</p>
-        <p>App version <b><span id="aboutAppVer">1.0</span></b>. The current data version is shown in the top bar and in the disclaimer.</p>
+        <p>App version <b><span id="aboutAppVer">1.1</span></b>. The current data version is shown in the disclaimer and footer.</p>
 
         <h3>How the encryption works</h3>
         <p>The fleet data lives in a public place, so it is encrypted before it ever leaves my hands. When I publish, the data is sealed with AES using a 256 bit key in GCM mode. The key is not stored anywhere. It is derived from a password using PBKDF2 with 200,000 iterations and a random salt, which makes guessing the password slow and expensive. What sits in the repository is only the sealed result, unreadable without the password.</p>
@@ -281,7 +281,7 @@
   (function () {
     /* ===== Encrypted update source (public repo holds ciphertext only) ===== */
     var CONFIG_URL = "https://raw.githubusercontent.com/BBJcaptain/fleet-config/main/fleet-config.enc";
-    var APP_VERSION = "1.0";
+    var APP_VERSION = "1.1";
     var CACHE_KEY  = "a320config.enc.cache";     // { text, syncedAt }
     var PW_KEY     = "a320config.pw";            // lightly obfuscated password (device convenience only)
     var DISCLAIMER_VERSION = "2026-07-13", DISCLAIMER_KEY = "a320config.disclaimerAccepted";
@@ -373,20 +373,17 @@
     function displayScalar(v) { return (v === null || v === undefined || v === "") ? "—" : String(v); }
     function boolText(v, on, off) { on = on || "Installed"; off = off || "N/A"; if (v === true) return el("span", { cls: "bval yes", text: on }); if (v === false) return el("span", { cls: "bval no", text: off }); return el("span", { cls: "bval na", text: "—" }); }
     function fmtRel(d) { if (!d) return "never"; var s = Math.max(0, (Date.now() - d.getTime()) / 1000); if (s < 60) return "just now"; if (s < 3600) return Math.floor(s / 60) + " min ago"; if (s < 86400) return Math.floor(s / 3600) + " h ago"; return Math.floor(s / 86400) + " d ago"; }
+    function fmtDMY(s) { if (!s) return "unknown"; var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s).trim()); return m ? (m[3] + "-" + m[2] + "-" + m[1]) : String(s); }
 
     /* ---- Rendering ---- */
     function renderChrome() {
       byId("appTitle").textContent = (data && data.meta.title) || "Fleet Configuration";
-      var v = [];
-      if (data && data.meta.version) v.push("v" + data.meta.version);
-      if (data && data.meta.updated) v.push(data.meta.updated);
-      byId("appVersion").textContent = v.join("  ·  ");
       var n = data ? data.aircraft.length : 0;
       var jump = byId("jump"); clear(jump);
       if (data) data.aircraft.forEach(function (a, i) { var o = el("option", { text: (a.registration || "(no reg)"), attrs: { value: String(i) } }); if (i === index) o.selected = true; jump.appendChild(o); });
       byId("pos").textContent = n ? (index + 1) + " / " + n : "0 / 0";
       byId("jump").disabled = (n === 0);
-      byId("gateVer").textContent = data && data.meta.version ? ("v" + data.meta.version + (data.meta.updated ? " · " + data.meta.updated : "")) : "not loaded";
+      byId("gateVer").textContent = data && data.meta.version ? ("v" + data.meta.version + (data.meta.updated ? " · " + fmtDMY(data.meta.updated) : "")) : "not loaded";
       byId("gateFp").textContent = fingerprint || "not loaded";
     }
     function renderStage() {
@@ -438,7 +435,7 @@
     function setStatus(state) {
       var bar = byId("statusDot"), msg = byId("updateMsg");
       bar.className = "statusdot state-" + state; clear(msg);
-      var dataDate = (data && data.meta.updated) ? data.meta.updated : "unknown";
+      var dataDate = fmtDMY(data && data.meta.updated ? data.meta.updated : null);
       var ver = (data && data.meta.version) ? data.meta.version : "—";
       bar.title = state === "checking" ? "Checking GitHub for the latest data…"
         : state === "live" ? ("Live — up to date. Version " + ver + ", updated " + dataDate + ".")
