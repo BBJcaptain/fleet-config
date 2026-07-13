@@ -176,23 +176,19 @@
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
       </button>
     </div>
+    <span class="statusdot state-checking" id="statusDot" title="Update status" aria-hidden="true"></span>
   </header>
-
-  <div class="updatebar state-checking" id="updatebar">
-    <span class="dot" aria-hidden="true"></span>
-    <span class="msg" id="updateMsg">Starting…</span>
-  </div>
 
   <main id="stage"></main>
 
   <footer class="footnote">
-    <span id="footText"></span>
-    <span class="foot-links">
+    <div class="foot-status"><span class="msg" id="updateMsg">Starting…</span></div>
+    <div class="foot-links">
       <button id="btnAbout" class="footbtn" type="button">About</button>
       <button id="btnVerify" class="footbtn" type="button">Verify</button>
       <a class="footbtn" href="mailto:support@aviationcyber.academy?subject=Feedback%20about%20the%20A320%20fleet%20config%20app">Feedback</a>
       <button id="btnDisclaimer" class="footbtn" type="button">Disclaimer</button>
-    </span>
+    </div>
   </footer>
   <div id="toast" role="status" aria-live="polite"></div>
 
@@ -228,9 +224,18 @@
   </div>
 
   <style>
-    .foot-links { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    .footbtn { font-family: var(--sans); font-size: 11px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 6px 10px; cursor: pointer; text-decoration: none; }
+    .footnote { flex-direction: column; align-items: stretch; gap: 8px; }
+    .foot-status { font-size: 11px; color: var(--ink-soft); line-height: 1.4; }
+    .foot-status .msg b { color: var(--ink); }
+    .foot-links { display: flex; gap: 6px; align-items: stretch; }
+    .footbtn { flex: 1 1 0; text-align: center; font-family: var(--sans); font-size: 11px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 8px 4px; cursor: pointer; text-decoration: none; }
     .footbtn:hover { background: var(--panel-2); }
+    .statusdot { width: 10px; height: 10px; border-radius: 50%; background: var(--ink-soft); margin-left: auto; flex: 0 0 auto; }
+    .statusdot.state-checking { background: var(--accent); animation: pulse 1s infinite; }
+    .statusdot.state-live { background: var(--good); }
+    .statusdot.state-offline { background: var(--amber); }
+    .statusdot.state-error { background: var(--danger); }
+    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.35;} }
     .iconbtn { display: inline-flex; align-items: center; justify-content: center; padding: 7px; min-width: 34px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
     .iconbtn:hover { background: var(--panel-2); }
     .eqcols { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: start; }
@@ -252,14 +257,17 @@
     var CACHE_KEY  = "a320config.enc.cache";     // { text, syncedAt }
     var PW_KEY     = "a320config.pw";            // lightly obfuscated password (device convenience only)
     var DISCLAIMER_VERSION = "2026-07-13", DISCLAIMER_KEY = "a320config.disclaimerAccepted";
+    var AUTO_LOCK_MS = 15 * 60 * 1000;   // auto lock after 15 minutes of inactivity; change to suit
+    var lockTimer = null, lastActivity = 0;
 
     var SCHEMA = [
       { section: "Equipment", cols: true, fields: [
         { key: "brk_fan", label: "BRK FAN", type: "bool", col: "left" },
         { key: "winglets", label: "Winglets", type: "bool", col: "left" },
-        { key: "engine_type", label: "Engine", col: "left" },
+        { key: "engine_type", label: "Engines", col: "left" },
         { key: "cargo_heat", label: "Cargo heat", type: "bool", col: "left" },
         { key: "acars", label: "ACARS", col: "right" },
+        { key: "init", label: "INIT*", col: "right" },
         { key: "adiru_type", label: "ADIRU", col: "right" },
         { key: "weather_radar_type", label: "WX RDR", col: "right" },
         { key: "hf_radio", label: "HF Radio", type: "bool", col: "right" },
@@ -271,7 +279,7 @@
         { key: "max_altitude_autoland", label: "Max autoland ALT", unit: "ft" },
         { key: "takeoff_tailwind_kts", label: "T/O Tailwind limit", unit: "kts" },
         { key: "landing_tailwind_kts", label: "LDG Tailwind limit", unit: "kts" },
-        { key: "noise_chapter", label: "Noise chapter" }
+        { key: "noise_chapter", label: "Noise Certification" }
       ]},
       { section: "Remarks", wide: true, fields: [ { key: "remarks", label: "Remarks", type: "textarea" } ]}
     ];
@@ -334,9 +342,8 @@
       if (data && data.meta.updated) v.push(data.meta.updated);
       byId("appVersion").textContent = v.join("  ·  ");
       var n = data ? data.aircraft.length : 0;
-      byId("footText").textContent = n + " aircraft · encrypted · read-only" + (fingerprint ? " · fp " + fingerprint.slice(0, 8) : "");
       var jump = byId("jump"); clear(jump);
-      if (data) data.aircraft.forEach(function (a, i) { var o = el("option", { text: (a.registration || "(no reg)") + " — " + (a.model || ""), attrs: { value: String(i) } }); if (i === index) o.selected = true; jump.appendChild(o); });
+      if (data) data.aircraft.forEach(function (a, i) { var o = el("option", { text: (a.registration || "(no reg)"), attrs: { value: String(i) } }); if (i === index) o.selected = true; jump.appendChild(o); });
       byId("pos").textContent = n ? (index + 1) + " / " + n : "0 / 0";
       byId("jump").disabled = (n === 0);
       byId("gateVer").textContent = data && data.meta.version ? ("v" + data.meta.version + (data.meta.updated ? " · " + data.meta.updated : "")) : "not loaded";
@@ -387,8 +394,8 @@
 
     /* ---- Status bar ---- */
     function setStatus(state) {
-      var bar = byId("updatebar"), msg = byId("updateMsg");
-      bar.className = "updatebar state-" + state; clear(msg);
+      var bar = byId("statusDot"), msg = byId("updateMsg");
+      bar.className = "statusdot state-" + state; clear(msg);
       var dataDate = (data && data.meta.updated) ? data.meta.updated : "unknown";
       if (state === "checking") { msg.textContent = "Checking GitHub for the latest data…"; return; }
       if (state === "live") {
@@ -459,6 +466,15 @@
     function openPwGate(errMsg) { byId("pwErr").hidden = !errMsg; if (errMsg) byId("pwErr").textContent = errMsg; byId("pwInput").value = ""; byId("pwGate").hidden = false; setTimeout(function () { byId("pwInput").focus(); }, 50); }
     function closePwGate() { byId("pwGate").hidden = true; }
 
+    /* ---- Auto lock after inactivity ---- */
+    function doLock(msg) { if (lockTimer) { clearTimeout(lockTimer); lockTimer = null; } clearPw(); openPwGate(msg || null); }
+    function resetLockTimer() {
+      lastActivity = Date.now();
+      if (lockTimer) clearTimeout(lockTimer);
+      if (!byId("pwGate").hidden) return;   // only run while unlocked
+      lockTimer = setTimeout(function () { doLock("Locked after inactivity. Enter the password to continue."); toast("Locked after inactivity."); }, AUTO_LOCK_MS);
+    }
+
     function submitPassword() {
       var pw = byId("pwInput").value;
       if (!pw) { openPwGate("Enter the password."); return; }
@@ -466,7 +482,7 @@
       byId("pwBtn").disabled = true;
       unlock(pw, true).then(function (shown) {
         byId("pwBtn").disabled = false;
-        if (shown) { setPw(pw); closePwGate(); }
+        if (shown) { setPw(pw); closePwGate(); resetLockTimer(); }
         else { openPwGate("Could not load. Check your connection, then try again."); }
       }).catch(function (err) {
         byId("pwBtn").disabled = false;
@@ -479,7 +495,7 @@
     function boot() {
       if (!cryptoOk()) { setStatus("error"); openPwGate("Encryption needs HTTPS. Open the hosted link (https)."); return; }
       var pw = getPw();
-      if (pw) { setStatus("checking"); unlock(pw, false).then(function (shown) { if (!shown) openPwGate("Saved password did not work. Enter it again."); }); }
+      if (pw) { setStatus("checking"); unlock(pw, false).then(function (shown) { if (!shown) openPwGate("Saved password did not work. Enter it again."); else resetLockTimer(); }); }
       else { openPwGate(); }
     }
 
@@ -501,6 +517,8 @@
       byId("pwBtn").addEventListener("click", submitPassword);
       byId("pwInput").addEventListener("keydown", function (e) { if (e.key === "Enter") submitPassword(); });
       document.addEventListener("keydown", function (e) { if (e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return; if (e.key === "ArrowLeft") go(index - 1); else if (e.key === "ArrowRight") go(index + 1); });
+      ["click", "keydown", "touchstart", "mousemove"].forEach(function (ev) { document.addEventListener(ev, function () { if (byId("pwGate").hidden) resetLockTimer(); }, { passive: true }); });
+      document.addEventListener("visibilitychange", function () { if (document.hidden) return; if (!byId("pwGate").hidden) return; if (lastActivity && (Date.now() - lastActivity) > AUTO_LOCK_MS) doLock("Locked after inactivity. Enter the password to continue."); else resetLockTimer(); });
 
       render();
       if (!disclaimerAccepted()) { openDisclaimer(); } else { boot(); }
