@@ -62,10 +62,11 @@ is built in layers.
   the disclaimer, so two people can confirm in one glance they are on the same
   release.
 
-- **Session control.** The password can be **remembered on the device** (default)
-  or, by unchecking the box, kept for the session only, useful on shared devices.
-  Tapping **Lock**, or the 15 minute inactivity auto lock, clears the password
-  **and wipes the offline cached copy**.
+- **Session control (session only password).** The password is **never written to
+  the device**. It is held in memory for the session only, so the user enters it
+  once each time the app is opened fresh. Tapping **Lock**, or the 15 minute
+  inactivity auto lock, clears the password from memory **and wipes the offline
+  cached copy**.
 
 - **Guess resistance.** After repeated wrong passwords the app adds an increasing
   delay before the next attempt (up to 30 seconds), raising the cost of brute
@@ -141,8 +142,8 @@ Do steps 1 to 3 once; after that the app is an icon on your Home Screen.
 2. Add it to your Home Screen (iPhone: **Share → Add to Home Screen**; Android:
    **menu → Add to Home screen**).
 3. Open it from the icon, accept the disclaimer, and enter the **fleet password**
-   your admin gave you. Leave **Remember on this device** ticked for your own
-   phone; untick it on a shared device.
+   your admin gave you. The password is kept for the session only, so you enter
+   it again each time you open the app fresh (and after Lock or 15 minutes idle).
 
 Day to day: the footer shows a green dot and "Up to date" with the data version,
 or, offline, the date the data was last updated. Use the aircraft selector to
