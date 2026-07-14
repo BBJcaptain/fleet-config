@@ -15,7 +15,7 @@
     Encryption needs a secure context (HTTPS), e.g. GitHub Pages.
   -->
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; script-src 'self' 'sha256-CgPqEV9wTeEKy3jBW1tLwCROU/DG+TmeAEfStXfU6/8='; style-src 'sha256-JPVNRW9jGBHfiR/4yF33xUnLccUSJulcFvs8xIuWNeA=' 'sha256-k1CJvalQ5TLCKhdQZXmGGsq8rNRd6ll9eY5Qz7DFnZY='; img-src 'self' data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+        content="default-src 'none'; script-src 'self' 'sha256-U0Qq1E+1goFFyv+OwI4eataGClnSqllKQlnsWY/Ev4w='; style-src 'sha256-w/doHtB4q4yGcZ5IAlaXDvcwpas5QWUCm1sOfuIYTt4=' 'sha256-k1CJvalQ5TLCKhdQZXmGGsq8rNRd6ll9eY5Qz7DFnZY='; img-src 'self' data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
   <title>A320 Fleet Configuration</title>
 
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -85,8 +85,12 @@
   .section > h3::after { content: ""; position: absolute; left: 0; bottom: 0; width: 28px; height: 3px; background: var(--accent); border-radius: 2px; }
   .accentbar { width: 34px; height: 3px; background: var(--accent); border-radius: 2px; margin: 3px 0 1px; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .field { display: flex; flex-direction: column; gap: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; min-width: 0; }
-  .field .label { font-size: 11px; color: var(--ink-soft); }
+  .field { position: relative; display: flex; flex-direction: column; gap: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; min-width: 0; }
+  .field .label { font-size: 11px; color: var(--ink-soft); display: flex; align-items: center; gap: 6px; }
+  .tip-btn { width: 15px; height: 15px; flex: 0 0 auto; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--accent); font-size: 10px; font-weight: 700; font-style: italic; line-height: 1; padding: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+  .tip-btn:hover { border-color: var(--accent); }
+  .tip-bubble { position: absolute; top: calc(100% - 4px); left: 8px; right: 8px; background: #0e2a5c; border: 1px solid var(--accent); border-radius: 8px; padding: 8px 10px; font-size: 11.5px; line-height: 1.45; color: var(--ink); z-index: 40; box-shadow: 0 10px 24px rgba(0,0,0,0.45); }
+  .tip-bubble[hidden] { display: none; }
   .field .value { font-size: 14px; font-weight: 600; font-family: var(--mono); overflow-wrap: anywhere; }
   .chip { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: .4px; }
   .chip.yes { background: rgba(53,194,107,0.22); color: var(--good); border: 1px solid rgba(126,240,166,0.5); }
@@ -136,6 +140,7 @@
     .remarks-box { background: #f4f7fb; border-color: #bbb; color: #000; } .section > h3 { color: #0b3f86; }
   }
   @media (max-width: 420px) { .brand-text { display: none; } .secbadge-txt { display: none; } }
+  @media (min-width: 820px) { :root { --sheet-w: 760px; } main#stage { padding: 18px 16px 40px; } .sheet-body { padding: 8px 20px 22px; } .grid, .eqcols { gap: 12px; } .field { padding: 10px 12px; } .sheet-head .reg { font-size: 34px; } }
   </style>
 </head>
 <body>
@@ -219,7 +224,7 @@
 
         <h3>Version numbering</h3>
         <p>Two versions travel with the app. The <b>app version</b> is the software itself and changes only when the app is rebuilt. The <b>data version</b> is the fleet database, shown as a version number and a date, and it changes every time I publish new fleet data. You can see both in the disclaimer, along with a fingerprint of the exact data you are looking at, so two people can confirm in one glance that they are reading the same release.</p>
-        <p>App version <b><span id="aboutAppVer">1.1</span></b>. The current data version is shown in the disclaimer and footer.</p>
+        <p>App version <b><span id="aboutAppVer">1.4</span></b>. The current data version is shown in the disclaimer and footer.</p>
 
         <h3>How the encryption works</h3>
         <p>The fleet data lives in a public place, so it is encrypted before it ever leaves my hands. When I publish, the data is sealed with AES using a 256 bit key in GCM mode. The key is not stored anywhere. It is derived from a password using PBKDF2 with 200,000 iterations and a random salt, which makes guessing the password slow and expensive. What sits in the repository is only the sealed result, unreadable without the password.</p>
@@ -281,7 +286,7 @@
   (function () {
     /* ===== Encrypted update source (public repo holds ciphertext only) ===== */
     var CONFIG_URL = "https://raw.githubusercontent.com/BBJcaptain/fleet-config/main/fleet-config.enc";
-    var APP_VERSION = "1.1";
+    var APP_VERSION = "1.4";
     var CACHE_KEY  = "a320config.enc.cache";     // { text, syncedAt }
     var PW_KEY     = "a320config.pw";            // lightly obfuscated password (device convenience only)
     var DISCLAIMER_VERSION = "2026-07-13", DISCLAIMER_KEY = "a320config.disclaimerAccepted";
@@ -304,7 +309,7 @@
       { section: "Equipment", cols: true, fields: [
         { key: "brk_fan", label: "BRK FAN", type: "bool", col: "left" },
         { key: "winglets", label: "Sharklets", type: "bool", on: "Installed", off: "Not Installed", col: "left" },
-        { key: "engine_type", label: "Engines", col: "left" },
+        { key: "engine_type", label: "Engines", tip: "Engine warm-up (idle before applying takeoff thrust) and cool-down (idle before shutdown) times differ by type. The IAE V2500 typically requires longer warm-up and cool-down periods than the CFM56. Always apply the exact times in the FCOM and company Operations Manual for the engine fitted to this airframe.", col: "left" },
         { key: "cargo_heat", label: "Cargo heat", type: "bool", col: "left" },
         { key: "headset_plug", label: "Headset Plug", col: "left" },
         { key: "acars", label: "ACARS", col: "right" },
@@ -312,12 +317,13 @@
         { key: "adiru_type", label: "ADIRU", col: "right" },
         { key: "weather_radar_type", label: "WX RDR", col: "right" },
         { key: "hf_radio", label: "HF Radio", type: "bool", col: "right" },
-        { key: "cpdlc", label: "CPDLC", col: "right" }
+        { key: "cpdlc", label: "CPDLC", col: "right" },
+        { key: "transponder", label: "Transponder", col: "right" }
       ]},
       { section: "Remarks", wide: true, fields: [ { key: "remarks", label: "Remarks", type: "textarea" } ]}
     ];
 
-    var data = null, index = 0, source = null, lastSync = null, fingerprint = null;
+    var data = null, index = 0, source = null, lastSync = null, fingerprint = null, openTip = null;
 
     /* ---- DOM helpers ---- */
     function el(t, o) { var e = document.createElement(t); o = o || {}; if (o.cls) e.className = o.cls; if (o.text !== undefined && o.text !== null) e.textContent = String(o.text); if (o.attrs) Object.keys(o.attrs).forEach(function (k) { e.setAttribute(k, o.attrs[k]); }); return e; }
@@ -387,6 +393,7 @@
       byId("gateFp").textContent = fingerprint || "not loaded";
     }
     function renderStage() {
+      closeTips();
       var stage = byId("stage"); clear(stage);
       if (!data || !data.aircraft.length) { var e = el("div", { cls: "empty" }); e.appendChild(el("h2", { text: "No fleet data" })); e.appendChild(el("p", { text: "Connect to the internet once to download and unlock the fleet." })); stage.appendChild(e); return; }
       data.aircraft.forEach(function (a, i) { var s = buildSheet(a); if (i !== index) s.hidden = true; stage.appendChild(s); });
@@ -399,8 +406,8 @@
       var sub = [];
       if (a.model) sub.push(String(a.model));
       sub.push("MSN " + displayScalar(a.msn));
-      sub.push("First Flight " + displayScalar(a.first_flight));
-      if (a.first_owner) sub.push("First Owner " + a.first_owner);
+      sub.push("1st Flt " + displayScalar(a.first_flight));
+      if (a.first_owner) sub.push("1st Owner " + a.first_owner);
       head.appendChild(el("div", { cls: "subline", text: sub.join("  ·  ") }));
       sheet.appendChild(head);
       var body = el("div", { cls: "sheet-body" });
@@ -423,13 +430,22 @@
     }
     function buildField(a, f) {
       if (f.type === "textarea") { var w = el("div"); w.appendChild(el("div", { cls: "remarks-box", text: (a[f.key] === undefined || a[f.key] === "" || a[f.key] === null) ? "—" : String(a[f.key]) })); return w; }
-      var row = el("div", { cls: "field" }); row.appendChild(el("div", { cls: "label", text: f.label }));
+      var row = el("div", { cls: "field" });
+      var lab = el("div", { cls: "label" });
+      lab.appendChild(el("span", { text: f.label }));
+      if (f.tip) {
+        var tb = el("button", { cls: "tip-btn", text: "i", attrs: { type: "button", "aria-label": "More information: " + f.label } });
+        var bub = el("div", { cls: "tip-bubble", text: f.tip, attrs: { hidden: "" } });
+        tb.addEventListener("click", function (e) { e.stopPropagation(); var isOpen = !bub.hasAttribute("hidden"); closeTips(); if (!isOpen) { bub.removeAttribute("hidden"); openTip = bub; } });
+        lab.appendChild(tb); row.appendChild(lab); row.appendChild(bub);
+      } else { row.appendChild(lab); }
       var v = el("div", { cls: "value" });
       if (f.type === "bool") { v.appendChild(boolText(a[f.key] === undefined ? null : a[f.key], f.on, f.off)); }
       else { var txt = displayScalar(a[f.key]); if (f.unit && txt !== "—") txt = txt + " " + f.unit; v.textContent = txt; }
       row.appendChild(v); return row;
     }
     function render() { renderChrome(); renderStage(); }
+    function closeTips() { if (openTip) { openTip.setAttribute("hidden", ""); openTip = null; } }
 
     /* ---- Status bar ---- */
     function setStatus(state) {
@@ -438,14 +454,16 @@
       var dataDate = fmtDMY(data && data.meta.updated ? data.meta.updated : null);
       var ver = (data && data.meta.version) ? data.meta.version : "—";
       bar.title = state === "checking" ? "Checking GitHub for the latest data…"
-        : state === "live" ? ("Live — up to date. Version " + ver + ", updated " + dataDate + ".")
+        : state === "live" ? ("Synced just now. Database " + ver + ", updated " + dataDate + ".")
         : state === "offline" ? (data ? ("Offline — showing saved data, last updated " + dataDate + ".") : "Offline — no saved data yet.")
         : "Update could not be read.";
       if (state === "checking") { msg.textContent = "Checking GitHub for the latest data…"; return; }
       if (state === "live") {
-        msg.appendChild(document.createTextNode("Up to date. Version ")); msg.appendChild(el("b", { text: (data.meta.version || "—") }));
-        msg.appendChild(document.createTextNode(", updated ")); msg.appendChild(el("b", { text: dataDate }));
-        msg.appendChild(document.createTextNode(". Synced just now.")); return;
+        msg.appendChild(document.createTextNode("Synced just now | Database "));
+        msg.appendChild(el("b", { text: (data.meta.version || "—") }));
+        msg.appendChild(document.createTextNode(" | updated "));
+        msg.appendChild(el("b", { text: dataDate }));
+        msg.appendChild(document.createTextNode(".")); return;
       }
       if (state === "offline") {
         msg.appendChild(el("b", { text: "No connection to update server." }));
@@ -584,6 +602,7 @@
       byId("pwBtn").addEventListener("click", submitPassword);
       byId("pwInput").addEventListener("keydown", function (e) { if (e.key === "Enter") submitPassword(); });
       document.addEventListener("keydown", function (e) { if (e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return; if (e.key === "ArrowLeft") go(index - 1); else if (e.key === "ArrowRight") go(index + 1); });
+      document.addEventListener("click", closeTips);
       ["click", "keydown", "touchstart", "mousemove"].forEach(function (ev) { document.addEventListener(ev, function () { if (byId("pwGate").hidden) resetLockTimer(); }, { passive: true }); });
       document.addEventListener("visibilitychange", function () { if (document.hidden) return; if (!byId("pwGate").hidden) return; if (lastActivity && (Date.now() - lastActivity) > AUTO_LOCK_MS) doLock("Locked after inactivity. Enter the password to continue."); else resetLockTimer(); });
 
