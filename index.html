@@ -15,7 +15,7 @@
     Encryption needs a secure context (HTTPS), e.g. GitHub Pages.
   -->
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; script-src 'self' 'sha256-kMgmPfnCBRC3q3etQhKJ73CbPv/LGfzOZSjBRm4Y9W0='; style-src 'sha256-EUMhEa+e+Za4lwze7NMZquircQQbh8Cnxh9o7e5iPzE=' 'sha256-k1CJvalQ5TLCKhdQZXmGGsq8rNRd6ll9eY5Qz7DFnZY='; img-src 'self' data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+        content="default-src 'none'; script-src 'self' 'sha256-aCcoQogUXq1/O0pZsU4WYE1T2LipVv4URtdkmK7M5M0='; style-src 'sha256-EUMhEa+e+Za4lwze7NMZquircQQbh8Cnxh9o7e5iPzE=' 'sha256-k1CJvalQ5TLCKhdQZXmGGsq8rNRd6ll9eY5Qz7DFnZY='; img-src 'self' data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
   <title>A320 Fleet Configuration</title>
 
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -239,10 +239,10 @@
 
         <h3>Version numbering</h3>
         <p>Two versions travel with the app. The <b>app version</b> is the software itself and changes only when the app is rebuilt. The <b>data version</b> is the fleet database, shown as a version number and a date, and it changes every time I publish new fleet data. You can see both in the disclaimer, along with a fingerprint of the exact data you are looking at, so two people can confirm in one glance that they are reading the same release.</p>
-        <p>App version <b><span id="aboutAppVer">1.5</span></b>. The current data version is shown in the disclaimer and footer.</p>
+        <p>App version <b><span id="aboutAppVer">1.6</span></b>. The current data version is shown in the disclaimer and footer.</p>
 
         <h3>How the encryption works</h3>
-        <p>The fleet data lives in a public place, so it is encrypted before it ever leaves my hands. When I publish, the data is sealed with AES using a 256 bit key in GCM mode. The key is not stored anywhere. It is derived from a password using PBKDF2 with 200,000 iterations and a random salt, which makes guessing the password slow and expensive. What sits in the repository is only the sealed result, unreadable without the password.</p>
+        <p>The fleet data lives in a public place, so it is encrypted before it ever leaves my hands. When I publish, the data is sealed with AES using a 256 bit key in GCM mode. The key is not stored anywhere. It is derived from a password using PBKDF2 with 600,000 iterations and a random salt, which makes guessing the password slow and expensive. What sits in the repository is only the sealed result, unreadable without the password.</p>
         <p>When you open the app, it downloads that sealed file over HTTPS and unlocks it on your own device with the password you type. The plaintext is never uploaded, never stored on any server, and is only ever held in the memory of your browser. GCM also authenticates the data, so if a single byte were altered in transit or in the repository, it simply refuses to unlock. The SHA 256 fingerprint in the disclaimer lets you confirm the release is the genuine one.</p>
 
         <h3>How secure it is: privacy and data security</h3>
@@ -301,7 +301,7 @@
   (function () {
     /* ===== Encrypted update source (public repo holds ciphertext only) ===== */
     var CONFIG_URL = "https://raw.githubusercontent.com/BBJcaptain/fleet-config/main/fleet-config.enc";
-    var APP_VERSION = "1.5";
+    var APP_VERSION = "1.6";
     var CACHE_KEY  = "a320config.enc.cache";     // { text, syncedAt }
     var PW_KEY     = "a320config.pw";            // lightly obfuscated password (device convenience only)
     var DISCLAIMER_VERSION = "2026-07-13", DISCLAIMER_KEY = "a320config.disclaimerAccepted";
@@ -363,13 +363,18 @@
       var env;
       try { env = JSON.parse(text); } catch (e) { return Promise.reject(new Error("bad-file")); }
       if (!env || !env.ct || !env.iv || !env.salt) return Promise.reject(new Error("bad-file"));
-      var salt = b64ToBytes(env.salt), iv = b64ToBytes(env.iv), ct = b64ToBytes(env.ct), iter = env.iter || 200000;
+      var MIN_ITER = 600000;   // reject envelopes that ask for a weaker KDF than we ship
+      var iter = env.iter || 0;
+      if (iter < MIN_ITER) return Promise.reject(new Error("bad-file"));
+      var salt = b64ToBytes(env.salt), iv = b64ToBytes(env.iv), ct = b64ToBytes(env.ct);
       return crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"])
         .then(function (bk) { return crypto.subtle.deriveKey({ name: "PBKDF2", salt: salt, iterations: iter, hash: "SHA-256" }, bk, { name: "AES-GCM", length: 256 }, false, ["decrypt"]); })
         .then(function (key) { return crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, ct); })
         .then(function (buf) {
           var pt = new TextDecoder().decode(buf);
-          if (!env.sig || !SIGN_PUB || SIGN_PUB.indexOf("__") === 0) return pt;   // unsigned file or key not configured
+          var keyConfigured = SIGN_PUB && SIGN_PUB.indexOf("__") !== 0;
+          if (!keyConfigured) return pt;               // signing not configured for this deployment
+          if (!env.sig) throw new Error("bad-signature");   // key configured: a missing signature is a failure, never a bypass
           return verifySig(pt, env.sig).then(function (ok) { if (!ok) throw new Error("bad-signature"); return pt; });
         });
     }
@@ -378,7 +383,6 @@
     function getPw() { return currentPw; }
     function clearStoredPw() { try { window.localStorage.removeItem(PW_KEY); } catch (e) {} }   // purge any legacy stored password
     function clearPw() { currentPw = null; clearStoredPw(); }
-    function wipeCache() { try { window.localStorage.removeItem(CACHE_KEY); } catch (e) {} }
 
     /* ---- Cache (ciphertext only; plaintext never persisted) ---- */
     function readCache() { try { var raw = window.localStorage.getItem(CACHE_KEY); return raw ? JSON.parse(raw) : null; } catch (e) { return null; } }
@@ -548,7 +552,7 @@
     function closePwGate() { byId("pwGate").hidden = true; }
 
     /* ---- Auto lock after inactivity ---- */
-    function doLock(msg) { if (lockTimer) { clearTimeout(lockTimer); lockTimer = null; } clearPw(); wipeCache(); openPwGate(msg || null); }
+    function doLock(msg) { if (lockTimer) { clearTimeout(lockTimer); lockTimer = null; } clearPw(); openPwGate(msg || null); }   // forget the password only; keep the encrypted cache so the app still opens offline (e.g. in flight)
 
     /* ---- Wrong-password backoff (raises the cost of guessing) ---- */
     function getFail() { try { return JSON.parse(window.localStorage.getItem(FAIL_KEY) || "{}") || {}; } catch (e) { return {}; } }
@@ -610,7 +614,7 @@
       clearStoredPw();   // session-only: purge any password persisted by an earlier version
       byId("jump").addEventListener("change", function (e) { go(Number(e.target.value)); });
       byId("btnVerify").addEventListener("click", function () { var pw = getPw(); if (pw) { setStatus("checking"); unlock(pw, false); } else openPwGate(); });
-      byId("btnLock").addEventListener("click", function () { clearPw(); wipeCache(); toast("Locked. Password and offline copy cleared."); openPwGate(); });
+      byId("btnLock").addEventListener("click", function () { clearPw(); toast("Locked. Enter the password to unlock."); openPwGate(); });
       byId("btnDisclaimer").addEventListener("click", function () { openDisclaimer(); });
       byId("btnAbout").addEventListener("click", openAbout);
       byId("aboutClose").addEventListener("click", closeAbout);

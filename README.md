@@ -48,12 +48,15 @@ is built in layers.
   GitHub CDN, and the device's offline cache hold **only ciphertext**. In
   transit it is fetched over HTTPS (TLS), so it is double wrapped. Plaintext
   exists only in the browser's memory after you enter the password; it is never
-  written to disk or uploaded.
+  written to disk or uploaded. The app also **rejects any file whose KDF is
+  weaker than 600,000 iterations**, so a downgraded envelope cannot lower the
+  cost of guessing.
 
 - **Authenticity (signed data).** The plaintext is signed with an **ECDSA P-256**
   private key held only in `editor.html`. The app carries the matching public
   key and **verifies every file it loads**. If the signature is missing or
-  invalid, the app **fails closed**: it refuses to display the data. This means
+  invalid, the app **fails closed**: it refuses to display the data — a file with
+  no signature is rejected, never trusted. This means
   even someone who learned the password cannot substitute their own file, and
   any tampering is caught. GCM already detects corruption; the signature proves
   the data came from the owner.
@@ -65,8 +68,11 @@ is built in layers.
 - **Session control (session only password).** The password is **never written to
   the device**. It is held in memory for the session only, so the user enters it
   once each time the app is opened fresh. Tapping **Lock**, or the 15 minute
-  inactivity auto lock, clears the password from memory **and wipes the offline
-  cached copy**.
+  inactivity auto lock, clears the password from memory. The **encrypted** offline
+  copy (ciphertext only) is deliberately kept, so the app still opens without a
+  connection — for example in flight — once the password is re-entered. Nothing
+  readable is stored on the device: the cache cannot be opened without the
+  password.
 
 - **Guess resistance.** After repeated wrong passwords the app adds an increasing
   delay before the next attempt (up to 30 seconds), raising the cost of brute
@@ -96,7 +102,8 @@ Chrome blocks crypto on a plain local file). Enter the fleet password.
 1. Start from the current data: **Load .enc**, choose `fleet-config.enc`; it
    decrypts into the form. Or edit the pre loaded template.
 2. Edit with the dropdowns. Every field is a controlled dropdown or a text box
-   with suggestions, which keeps all cards aligned and consistent.
+   with suggestions, which keeps all cards aligned and consistent. The editor is
+   a responsive two-column form that works on iPhone and iPad as well as desktop.
    - **Add your own dropdown value:** choose `--- New Option ---`, type it, and
      it is remembered on that device for next time.
    - **First Flight** uses a date picker; dates are stored and shown as
@@ -131,6 +138,11 @@ Remarks: free text.
 In the app, yes/no fields display as coloured text: green for the positive value
 (Installed, Approved, Allowed) and red for the negative.
 
+Some fields show a small **i** you can tap for a short explanatory note. For
+example, **Engines** explains the difference in warm-up and cool-down times
+between the fitted engine types. Tap the **i** again, or anywhere else, to close
+it. Ask the maintainer to add notes to other fields as needed.
+
 ---
 
 ## Users: how to download and activate the app
@@ -145,11 +157,15 @@ Do steps 1 to 3 once; after that the app is an icon on your Home Screen.
    your admin gave you. The password is kept for the session only, so you enter
    it again each time you open the app fresh (and after Lock or 15 minutes idle).
 
-Day to day: the footer shows a green dot and "Up to date" with the data version,
+Day to day: the top-right shows an **ENCRYPTED** badge and a live status dot
+(hover or tap for detail); the footer shows "Up to date" with the data version,
 or, offline, the date the data was last updated. Use the aircraft selector to
-switch airframes. **About** explains the app and its security; **Verify** forces
-an update check; **Feedback** emails the maintainer; **Disclaimer** shows the
-full notice; the **lock** icon forgets the password and clears the offline copy.
+switch airframes, and tap a field's **i** for a note where present. **About**
+explains the app and its security; **Verify** forces an update check; **Feedback**
+emails the maintainer; **Disclaimer** shows the full notice; the **lock** icon
+forgets the password (the encrypted offline copy is kept, so the app still opens
+without a connection once you re-enter the password). The layout is optimised for
+iPhone in portrait and adapts to a wider, roomier layout on iPad.
 
 ---
 
@@ -158,14 +174,31 @@ full notice; the **lock** icon forgets the password and clears the offline copy.
 - **App version**: the software (`index.html`), shown on the About page. Bumps by
   0.1 on every change.
 - **Data version**: the fleet database (`meta.version`), bumped by the admin when
-  publishing. Shown in the top bar and disclaimer, with the SHA-256 fingerprint.
+  publishing. Shown in the footer and the disclaimer, with the SHA-256
+  fingerprint. Dates are shown in **dd-mm-yyyy** format throughout.
+
+## Changelog
+
+### App 1.6
+- **Signatures are now mandatory.** A loaded file with no signature fails closed
+  and is refused (previously a missing signature silently skipped the check).
+  Files must be produced by `editor.html`, which always signs, so real releases
+  are unaffected.
+- **KDF downgrade protection.** The app rejects any envelope that specifies fewer
+  than 600,000 PBKDF2 iterations, and no longer falls back to a weaker default.
+- **Works offline after Lock.** Lock and the 15 minute auto lock now forget only
+  the password; the encrypted (ciphertext-only) offline copy is kept, so the app
+  still opens without a connection — e.g. in flight — once you re-enter the
+  password. Previously the cache was wiped on lock, which left the app unusable
+  offline.
 
 ## Look and feel
 
 Dark navy palette with a light blue accent and carbon texture, inspired by the
 Airbus NOVA style: white section headings with a short accent bar, an accent bar
-under each aircraft registration, a slim textured hero band, and chevron footer
-buttons.
+under each aircraft registration, a slim textured hero band, chevron footer
+buttons, and an elegant gradient registration typeface. Designed phone-first for
+iPhone in portrait, and fully responsive to iPad and desktop.
 
 ## Maintenance note
 
