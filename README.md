@@ -14,9 +14,12 @@ Public, safe to publish:
 
 - `index.html` — the app users open. Self contained, read only, holds **no fleet
   data**. Contains the ECDSA **public** key used to verify data authorship.
+- `collector.html` — keyless, offline field-collector page (holds no key and no
+  fleet data; safe to publish). Used to jot an aircraft's config in the air.
 - `fleet-config.enc` — the encrypted, signed fleet database (ciphertext).
-- `icon.png` — favicon and Home Screen icon.
-- `carbon.png` — background texture used in the header and footer.
+- `UI/` — static assets:
+  - `UI/icon.png` — favicon and Home Screen icon.
+  - `UI/carbon.png` — background texture used in the header and footer.
 - `README.md` — this file.
 
 **Never commit** (owner only, private):

@@ -15,7 +15,7 @@
     Encryption needs a secure context (HTTPS), e.g. GitHub Pages.
   -->
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; script-src 'self' 'sha256-jzpUK5TXF5KRHTjgYfLuC/BgBlV7SDqxOIpSCgyqqhU='; style-src 'sha256-EUMhEa+e+Za4lwze7NMZquircQQbh8Cnxh9o7e5iPzE=' 'sha256-k1CJvalQ5TLCKhdQZXmGGsq8rNRd6ll9eY5Qz7DFnZY='; img-src 'self' data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+        content="default-src 'none'; script-src 'self' 'sha256-jzpUK5TXF5KRHTjgYfLuC/BgBlV7SDqxOIpSCgyqqhU='; style-src 'sha256-+Qxx9/DusRx7V/cqPjDsZstFxPTBCUl7e8xeET7TArM=' 'sha256-ZeKcezLVoSYVQn5q+IcWU3Yg/yJJ+m4r+mmBiOxLcUQ='; img-src 'self' data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
   <title>A320 Fleet Configuration</title>
 
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -23,8 +23,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Fleet Config">
   <meta name="theme-color" content="#0b3f86">
-  <link rel="apple-touch-icon" href="icon.png">
-  <link rel="icon" href="icon.png">
+  <link rel="apple-touch-icon" href="UI/icon.png">
+  <link rel="icon" href="UI/icon.png">
 
   <style>
   :root {
@@ -38,9 +38,9 @@
   html, body { height: 100%; margin: 0; }
   body { font-family: var(--sans); color: var(--ink); background: linear-gradient(180deg, #0b224d 0%, #081a3a 45%, #06122a 100%) fixed; display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
 
-  .app-bar { display: flex; align-items: center; gap: 10px 16px; flex-wrap: wrap; padding: 10px 16px; padding-top: calc(10px + env(safe-area-inset-top)); padding-left: calc(16px + env(safe-area-inset-left)); padding-right: calc(16px + env(safe-area-inset-right)); background: linear-gradient(rgba(11,34,77,0.84), rgba(9,26,60,0.92)), url("carbon.png"); background-size: cover; background-position: center; border-bottom: 1px solid rgba(108,172,228,0.40); position: sticky; top: 0; z-index: 50; }
+  .app-bar { display: flex; align-items: center; gap: 10px 16px; flex-wrap: wrap; padding: 10px 16px; padding-top: calc(10px + env(safe-area-inset-top)); padding-left: calc(16px + env(safe-area-inset-left)); padding-right: calc(16px + env(safe-area-inset-right)); background: linear-gradient(rgba(11,34,77,0.84), rgba(9,26,60,0.92)), url("UI/carbon.png"); background-size: cover; background-position: center; border-bottom: 1px solid rgba(108,172,228,0.40); position: sticky; top: 0; z-index: 50; }
   .brand { display: flex; align-items: center; gap: 10px; }
-  .brand-mark { width: 30px; height: 30px; border-radius: 50%; background: url("icon.png") center / cover, #fff; flex: 0 0 auto; box-shadow: 0 0 0 1px rgba(255,255,255,0.15); }
+  .brand-mark { width: 30px; height: 30px; border-radius: 50%; background: url("UI/icon.png") center / cover, #fff; flex: 0 0 auto; box-shadow: 0 0 0 1px rgba(255,255,255,0.15); }
   .brand-mark::after { content: none; }
   .hdr-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
   .secbadge { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; letter-spacing: .4px; color: var(--ink-soft); text-transform: uppercase; }
@@ -102,7 +102,7 @@
   .empty { align-self: center; text-align: center; color: var(--ink-soft); margin-top: 16vh; max-width: 340px; }
   .empty h2 { color: var(--ink); font-weight: 600; }
 
-  .footnote { padding: 9px 16px; padding-bottom: calc(9px + env(safe-area-inset-bottom)); font-size: 10.5px; color: var(--ink-soft); background: linear-gradient(rgba(11,34,77,0.88), rgba(6,18,42,0.95)), url("carbon.png"); background-size: cover; background-position: center; border-top: 1px solid rgba(108,172,228,0.32); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .footnote { padding: 9px 16px; padding-bottom: calc(9px + env(safe-area-inset-bottom)); font-size: 10.5px; color: var(--ink-soft); background: linear-gradient(rgba(11,34,77,0.88), rgba(6,18,42,0.95)), url("UI/carbon.png"); background-size: cover; background-position: center; border-top: 1px solid rgba(108,172,228,0.32); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   button.linklike { border: none; background: transparent; color: var(--accent); font-size: 10.5px; padding: 2px 4px; text-decoration: underline; cursor: pointer; }
 
   #toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom)); background: #fff; color: var(--blue-bg); padding: 11px 16px; border-radius: 10px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 86vw; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
@@ -270,7 +270,7 @@
         radial-gradient(130% 180% at 14% 20%, rgba(108,172,228,0.34), rgba(108,172,228,0) 55%),
         repeating-linear-gradient(58deg, rgba(108,172,228,0.07) 0 1px, transparent 1px 26px),
         linear-gradient(rgba(9,26,60,0.62), rgba(6,18,42,0.82)),
-        url("carbon.png");
+        url("UI/carbon.png");
       background-size: cover, auto, cover, cover; background-position: center; }
     .pw-remember { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 12px; color: var(--ink-soft); cursor: pointer; }
     .pw-remember input { width: 18px; height: 18px; accent-color: var(--accent); }
