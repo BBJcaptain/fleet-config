@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!--
+    FLEET FIELD COLLECTOR — safe to carry anywhere, including in flight.
+    This page holds NO signing key, NO password, and NO fleet data. It does no
+    encryption and never touches the network, so it runs fully offline from a
+    local file in any browser (including iPhone Safari opened from Files).
+    Use it to jot down the configuration of an aircraft you are flying, then
+    "Download collected .json". Back on the ground, open the private editor,
+    Load .enc (the live fleet), and "Merge collected .json…" to fold it in.
+    Because it never encrypts or signs, it can never publish to the fleet by
+    itself — the trusted editor on the ground remains the only thing that can.
+  -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Fleet Field Collector</title>
+  <style>
+    :root { --blue-bg:#0b3f86; --blue-deep:#072e63; --panel:rgba(255,255,255,0.08); --panel-2:rgba(255,255,255,0.14);
+      --line:rgba(255,255,255,0.22); --ink:#fff; --ink-soft:rgba(255,255,255,0.72); --accent:#8dc0ff; --good:#7ef0a6; --danger:#ff9a9d;
+      --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace; --sans:"Helvetica Neue",Helvetica,Arial,system-ui,sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0 auto; font-family: var(--sans); background: var(--blue-bg); color: var(--ink); padding: 16px 14px 132px; max-width: 1000px; }
+    h1 { font-size: 19px; letter-spacing: .3px; margin: 4px 0 2px; }
+    .sub { color: var(--ink-soft); font-size: 12.5px; margin-bottom: 12px; }
+    .safe { font-size: 12px; line-height: 1.5; background: rgba(126,240,166,0.10); border: 1px solid rgba(126,240,166,0.4); border-radius: 10px; padding: 10px 12px; margin-bottom: 16px; color: var(--ink); }
+    .safe b { color: var(--good); }
+
+    .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: var(--blue-deep); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-bottom: 14px; }
+    .bar label { font-size: 12.5px; color: var(--ink-soft); }
+    input, select, textarea { font-family: var(--sans); font-size: 13px; color: var(--ink); background: var(--blue-deep); border: 1px solid var(--line); border-radius: 8px; padding: 8px 9px; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+    select { cursor: pointer; }
+
+    .acbar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+    .acbar label { font-size: 12.5px; color: var(--ink-soft); }
+    .acbar select { min-width: 200px; font-size: 14px; }
+    .acbar .pos { font-size: 12.5px; color: var(--ink-soft); font-family: var(--mono); }
+
+    .ac { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 0; margin-bottom: 14px; overflow: hidden; }
+    .ac-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--blue-deep); border-bottom: 1px solid var(--line); }
+    .ac-head .reg { font-family: var(--mono); font-size: 16px; font-weight: 700; letter-spacing: 1px; }
+    .ac-head .spacer { flex: 1; }
+    .ac-body { padding: 12px 14px; }
+    .grp { margin-top: 12px; }
+    .grp:first-child { margin-top: 0; }
+    .grp h3 { margin: 0 0 8px; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); border-bottom: 1px solid var(--line); padding-bottom: 5px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+    .grid.wide { grid-template-columns: 1fr; }
+    @media (min-width: 760px) { .grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); } }
+    .fld { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .fld label { font-size: 11px; color: var(--ink-soft); }
+    .fld input, .fld select, .fld textarea { width: 100%; }
+    textarea { min-height: 60px; resize: vertical; }
+
+    button { font-family: var(--sans); font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; cursor: pointer; }
+    button:hover { background: var(--panel-2); }
+    button.primary { background: #fff; color: var(--blue-bg); border-color: #fff; font-weight: 700; }
+    button.mini { font-size: 12px; padding: 6px 10px; }
+    button.danger { border-color: var(--danger); color: var(--danger); }
+
+    .actions { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(7,46,99,0.97); border-top: 1px solid var(--line); padding: 12px 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: center; }
+    .status { font-size: 12.5px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 12px 0; min-height: 20px; }
+    .status b { color: var(--good); } .status.err b { color: var(--danger); }
+    .hint { font-size: 12px; color: var(--ink-soft); line-height: 1.6; }
+    code { font-family: var(--mono); color: var(--accent); }
+    input[type="file"] { display: none; }
+  </style>
+</head>
+<body>
+  <h1>Fleet Field Collector</h1>
+  <div class="sub">Jot down an aircraft's configuration offline, then <b>Download collected .json</b> and merge it into the fleet later with the editor.</div>
+
+  <div class="safe">
+    <b>Safe to use in flight.</b> This page has no signing key, no password, and no fleet data. It never connects to the internet and does no encryption, so it works fully offline. It cannot publish to the fleet — only the private editor on the ground can do that.
+  </div>
+
+  <div class="bar">
+    <button id="btnLoadJson" class="mini">Load .json…</button>
+    <span class="sub" style="margin:0">Resume a collection you saved earlier.</span>
+    <input type="file" id="fileJson">
+  </div>
+
+  <div class="acbar" id="acbar" hidden>
+    <label for="acSelect">Aircraft</label>
+    <select id="acSelect"></select>
+    <span class="pos" id="acPos"></span>
+  </div>
+
+  <div id="aircraftList"></div>
+
+  <div style="margin-top:6px"><button id="btnAdd" class="primary">+ Add aircraft to collect</button></div>
+
+  <div class="status" id="status">Empty. Tap <b>Add aircraft to collect</b> and fill in what you see on the airframe.</div>
+
+  <div class="hint">
+    Fill in the <b>Registration</b> first — that is how the editor matches your notes to the right airframe when merging (an unknown registration is added as a new aircraft). Leave a field blank if you did not check it; blank fields are not merged, so they will not overwrite existing data. Dropdown values match the app exactly; free-text boxes remember your own entries on this device.
+  </div>
+
+  <div class="actions">
+    <button id="btnDownload" class="primary">Download collected .json</button>
+    <button id="btnCopy" class="mini">Copy JSON</button>
+  </div>
+
+  <script>
+  "use strict";
+  (function () {
+    /* ---- Form schema: MUST mirror editor.html / index.html exactly so the merge lines up ---- */
+    var MODELS = ["A319-112","A319-115","A320-214","A320-232","A320-251N","A320-271N","A321-211","A321-231","A321-251NX","A321-271NX"];
+    var FORM = [
+      { group: "Identification", fields: [
+        { k: "registration", label: "Registration", type: "text", placeholder: "9H-ABC" },
+        { k: "model", label: "Model", type: "list", options: MODELS },
+        { k: "msn", label: "MSN", type: "text", placeholder: "012345" },
+        { k: "first_flight", label: "First Flight", type: "date" },
+        { k: "first_owner", label: "First Owner", type: "text", placeholder: "Airline / lessor" }
+      ]},
+      { group: "Performance", fields: [
+        { k: "mlw_t", label: "MLW", type: "select", options: ["64.5", "66.0"] },
+        { k: "takeoff_tailwind_kts", label: "T/O Tailwind limit", type: "select", options: ["10", "15"] },
+        { k: "landing_tailwind_kts", label: "LDG Tailwind limit", type: "select", options: ["10", "15"] },
+        { k: "narrow_runway_approved", label: "Narrow RWY", type: "bool", on: "Approved", off: "Not Approved" },
+        { k: "se_taxi_no_apu", label: "SE Taxi w/o APU", type: "bool", on: "Allowed", off: "Not Allowed" },
+        { k: "max_altitude_autoland", label: "Max autoland ALT", type: "number", placeholder: "13100" },
+        { k: "noise_chapter", label: "ICAO Noise Certificate", type: "select", options: ["Chapter 14", "Chapter 4", "Other"] }
+      ]},
+      { group: "Equipment", fields: [
+        { k: "brk_fan", label: "BRK FANS", type: "bool", on: "Installed", off: "N/A" },
+        { k: "winglets", label: "Sharklets", type: "bool", on: "Installed", off: "Not Installed" },
+        { k: "engine_type", label: "Engines", type: "select", options: ["IAE", "CFM", "IAE V2527-A5", "CFM 56-5B4/3"] },
+        { k: "cargo_heat", label: "AFT Cargo heating", type: "bool", on: "Installed", off: "N/A" },
+        { k: "soft_goaround", label: "Soft Go-around", type: "bool", on: "Installed", off: "N/A" },
+        { k: "satcom", label: "SATCOM", type: "bool", on: "Installed", off: "N/A" },
+        { k: "headset_plug", label: "Headset Plug", type: "select", options: ["Airbus XLR", "General Aviation"] },
+        { k: "acars", label: "ACARS", type: "select", options: ["Spectralux", "Standard"] },
+        { k: "acars_datalink", label: "ACARS DATALINK", type: "bool", on: "Installed", off: "N/A" },
+        { k: "init", label: "INIT* FLT PL Retrieval", type: "select", options: ["Available", "N/A", "Partially Available"] },
+        { k: "adiru_type", label: "ADIRU", type: "list", options: ["Honeywell", "Northrop Grumman LTN-101", "Litton LTN-101"] },
+        { k: "weather_radar_type", label: "WX RDR", type: "list", options: ["Honeywell RDR-4000", "Collins WXR-2100", "Honeywell RDR-4B"] },
+        { k: "hf_radio", label: "HF Radio", type: "select", options: ["n/a", "HF1", "HF1 + HF2"] },
+        { k: "cpdlc", label: "CPDLC", type: "select", options: ["Installed", "N/A"] },
+        { k: "transponder", label: "Transponder", type: "list", options: ["Mode S Enhanced", "Mode S Elementary", "ACSS XS-950", "Collins TPR-901B", "Honeywell TRA-100B"] }
+      ]},
+      { group: "Remarks", wide: true, fields: [ { k: "remarks", label: "Remarks", type: "textarea" } ]}
+    ];
+
+    var fleet = [], curIndex = 0;
+
+    /* ---- Custom dropdown options (persist on this device) ---- */
+    var NEWOPT = "--- New Option ---";
+    var CUSTOM_KEY = "fleetcollector.customOptions";
+    var custom = loadCustom();
+    function loadCustom() { try { return JSON.parse(window.localStorage.getItem(CUSTOM_KEY) || "{}") || {}; } catch (e) { return {}; } }
+    function saveCustom() { try { window.localStorage.setItem(CUSTOM_KEY, JSON.stringify(custom)); } catch (e) {} }
+    function addCustom(k, val) { if (!val) return; custom[k] = custom[k] || []; if (custom[k].indexOf(val) < 0) { custom[k].push(val); saveCustom(); } }
+    function optionsFor(f) { var base = (f.options || []).slice(); (custom[f.k] || []).forEach(function (o) { if (base.indexOf(o) < 0) base.push(o); }); return base; }
+
+    /* ---- Date helpers: stored dd-mm-yyyy, picker uses ISO ---- */
+    function dmyToISO(s) { if (!s) return ""; var m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(String(s).trim()); return m ? (m[3] + "-" + m[2] + "-" + m[1]) : ""; }
+    function isoToDMY(s) { if (!s) return ""; var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s).trim()); return m ? (m[3] + "-" + m[2] + "-" + m[1]) : String(s); }
+
+    /* ---- DOM helpers ---- */
+    function el(t, o) { var e = document.createElement(t); o = o || {}; if (o.cls) e.className = o.cls; if (o.text !== undefined) e.textContent = String(o.text); if (o.attrs) Object.keys(o.attrs).forEach(function (k) { e.setAttribute(k, o.attrs[k]); }); return e; }
+    function clear(n) { while (n.firstChild) n.removeChild(n.firstChild); }
+    function byId(id) { return document.getElementById(id); }
+    function setStatusNode(node, isErr) { var s = byId("status"); clear(s); s.className = "status" + (isErr ? " err" : ""); s.appendChild(node); }
+    function setStatus(msg, isErr) { setStatusNode(document.createTextNode(msg), isErr); }
+
+    /* ---- Serialize (canonical key order = app data order) ---- */
+    function serializeAircraft(ac) {
+      var o = { id: ac.id || ("ac-" + Date.now() + "-" + Math.floor(Math.random() * 1000)) };
+      FORM.forEach(function (g) { g.fields.forEach(function (f) { o[f.k] = (ac[f.k] === undefined ? null : ac[f.k]); }); });
+      return o;
+    }
+    function buildJson() { return JSON.stringify({ collected: "fleet-field-notes", aircraft: fleet.map(serializeAircraft) }, null, 2); }
+
+    /* ---- Render ---- */
+    function makeControl(ac, f, idx) {
+      var wrap = el("div", { cls: "fld" });
+      wrap.appendChild(el("label", { text: f.label }));
+      var input;
+      if (f.type === "textarea") {
+        input = el("textarea"); input.value = ac[f.k] == null ? "" : String(ac[f.k]);
+        input.addEventListener("input", function () { ac[f.k] = input.value; });
+      } else if (f.type === "bool") {
+        input = el("select");
+        [["", "—"], ["true", f.on || "Installed"], ["false", f.off || "N/A"]].forEach(function (p) {
+          var o = el("option", { text: p[1], attrs: { value: p[0] } });
+          var c = ac[f.k];
+          if ((p[0] === "true" && c === true) || (p[0] === "false" && c === false) || (p[0] === "" && (c === null || c === undefined))) o.selected = true;
+          input.appendChild(o);
+        });
+        input.addEventListener("change", function () { ac[f.k] = input.value === "" ? null : (input.value === "true"); });
+      } else if (f.type === "select") {
+        input = el("select");
+        var opts = optionsFor(f);
+        var cur = (ac[f.k] === null || ac[f.k] === undefined) ? "" : String(ac[f.k]);
+        if (cur && opts.indexOf(cur) < 0) opts.push(cur);
+        [""].concat(opts).forEach(function (opt) {
+          var o = el("option", { text: opt === "" ? "—" : opt, attrs: { value: opt } });
+          if (cur === opt) o.selected = true;
+          input.appendChild(o);
+        });
+        input.appendChild(el("option", { text: NEWOPT, attrs: { value: NEWOPT } }));
+        input.addEventListener("change", function () {
+          if (input.value === NEWOPT) {
+            var nv = (window.prompt("Add a new option for " + f.label + ":") || "").trim();
+            if (nv) { addCustom(f.k, nv); ac[f.k] = nv; }
+            render();
+            return;
+          }
+          ac[f.k] = input.value === "" ? null : input.value;
+        });
+      } else if (f.type === "number") {
+        input = el("input", { attrs: { type: "number", step: "any", inputmode: "numeric" } });
+        if (f.placeholder) input.setAttribute("placeholder", f.placeholder);
+        input.value = (ac[f.k] === null || ac[f.k] === undefined) ? "" : String(ac[f.k]);
+        input.addEventListener("input", function () { var t = input.value.trim(); ac[f.k] = t === "" ? null : Number(t); });
+      } else if (f.type === "date") {
+        input = el("input", { attrs: { type: "date" } });
+        input.value = dmyToISO(ac[f.k]);
+        input.addEventListener("input", function () { ac[f.k] = input.value ? isoToDMY(input.value) : ""; });
+      } else if (f.type === "list") {
+        input = el("input", { attrs: { type: "text" } });
+        var listId = "dl-" + f.k + "-" + idx;
+        input.setAttribute("list", listId);
+        var dl = el("datalist", { attrs: { id: listId } });
+        optionsFor(f).forEach(function (opt) { dl.appendChild(el("option", { attrs: { value: opt } })); });
+        wrap.appendChild(dl);
+        input.value = ac[f.k] == null ? "" : String(ac[f.k]);
+        input.addEventListener("input", function () { ac[f.k] = input.value; });
+        input.addEventListener("change", function () { var v = input.value.trim(); if (v && optionsFor(f).indexOf(v) < 0) addCustom(f.k, v); });
+      } else {
+        input = el("input", { attrs: { type: "text" } });
+        if (f.placeholder) input.setAttribute("placeholder", f.placeholder);
+        input.value = ac[f.k] == null ? "" : String(ac[f.k]);
+        input.addEventListener("input", function () { ac[f.k] = input.value; if (f.k === "registration" && ac.__regEl) ac.__regEl.textContent = input.value || "(no reg)"; });
+      }
+      wrap.appendChild(input);
+      return wrap;
+    }
+
+    function makeCard(ac, idx) {
+      var card = el("div", { cls: "ac" });
+      var head = el("div", { cls: "ac-head" });
+      var reg = el("div", { cls: "reg", text: ac.registration || "(no reg)" });
+      ac.__regEl = reg;
+      head.appendChild(reg);
+      head.appendChild(el("div", { cls: "spacer" }));
+      var dup = el("button", { cls: "mini", text: "Duplicate" });
+      dup.addEventListener("click", function () { var copy = JSON.parse(JSON.stringify(serializeAircraft(ac))); copy.id = "ac-" + Date.now(); fleet.splice(idx + 1, 0, copy); curIndex = idx + 1; render(); });
+      var del = el("button", { cls: "mini danger", text: "Delete" });
+      del.addEventListener("click", function () { if (window.confirm("Delete " + (ac.registration || "this aircraft") + "?")) { fleet.splice(idx, 1); render(); } });
+      head.appendChild(dup); head.appendChild(del);
+      card.appendChild(head);
+
+      var body = el("div", { cls: "ac-body" });
+      FORM.forEach(function (g) {
+        var grp = el("div", { cls: "grp" });
+        grp.appendChild(el("h3", { text: g.group }));
+        var grid = el("div", { cls: "grid" + (g.wide ? " wide" : "") });
+        g.fields.forEach(function (f) { grid.appendChild(makeControl(ac, f, idx)); });
+        grp.appendChild(grid); body.appendChild(grp);
+      });
+      card.appendChild(body);
+      return card;
+    }
+
+    function render() {
+      if (curIndex >= fleet.length) curIndex = Math.max(0, fleet.length - 1);
+      var sel = byId("acSelect"); clear(sel);
+      fleet.forEach(function (ac, i) { var o = el("option", { text: (ac.registration || "(no reg)"), attrs: { value: String(i) } }); if (i === curIndex) o.selected = true; sel.appendChild(o); });
+      byId("acPos").textContent = fleet.length ? (curIndex + 1) + " / " + fleet.length : "0 / 0";
+      byId("acbar").hidden = fleet.length === 0;
+      var list = byId("aircraftList"); clear(list);
+      if (fleet.length) list.appendChild(makeCard(fleet[curIndex], curIndex));
+    }
+
+    function loadData(obj) {
+      var arr = Array.isArray(obj) ? obj : (obj && Array.isArray(obj.aircraft)) ? obj.aircraft : (obj && typeof obj === "object" ? [obj] : []);
+      fleet = arr;
+      curIndex = 0;
+      render();
+    }
+
+    /* ---- Files ---- */
+    function download(filename, text, mime) {
+      var blob = new Blob([text], { type: mime || "application/octet-stream" });
+      var url = URL.createObjectURL(blob); var a = document.createElement("a"); a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    }
+    function readFile(input, cb) { var f = input.files && input.files[0]; if (!f) return; var r = new FileReader(); r.onload = function () { cb(String(r.result)); }; r.onerror = function () { setStatus("Could not read that file.", true); }; r.readAsText(f); input.value = ""; }
+    function copyText(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { setStatus("JSON copied to the clipboard."); }, function () { legacyCopy(text); });
+      } else { legacyCopy(text); }
+    }
+    function legacyCopy(text) {
+      var ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.focus(); ta.select();
+      var ok = false; try { ok = document.execCommand("copy"); } catch (e) {}
+      document.body.removeChild(ta);
+      setStatus(ok ? "JSON copied to the clipboard." : "Could not copy — use Download instead.", !ok);
+    }
+
+    /* ---- Init ---- */
+    function init() {
+      byId("btnAdd").addEventListener("click", function () {
+        var ac = {};
+        FORM.forEach(function (g) { g.fields.forEach(function (f) { ac[f.k] = null; }); });
+        fleet.push(ac); curIndex = fleet.length - 1; render();
+        window.scrollTo(0, 0);
+        setStatus("New aircraft added, every field blank. Fill in the registration and what you can verify.");
+      });
+      byId("acSelect").addEventListener("change", function (e) { curIndex = Number(e.target.value); render(); window.scrollTo(0, 0); });
+
+      byId("btnLoadJson").addEventListener("click", function () { byId("fileJson").click(); });
+      byId("fileJson").addEventListener("change", function () { readFile(this, function (txt) { try { loadData(JSON.parse(txt)); setStatus("Loaded collected JSON. Edit or add more, then download again."); } catch (e) { setStatus("That file is not valid JSON.", true); } }); });
+
+      byId("btnDownload").addEventListener("click", function () {
+        if (!fleet.length) { setStatus("Nothing to download yet — add an aircraft first.", true); return; }
+        download("fleet-collected.json", buildJson(), "application/json");
+        setStatus("Downloaded fleet-collected.json. On the ground, open the editor, Load .enc, then Merge collected .json.");
+      });
+      byId("btnCopy").addEventListener("click", function () { if (!fleet.length) { setStatus("Nothing to copy yet — add an aircraft first.", true); return; } copyText(buildJson()); });
+
+      render();
+    }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
+  })();
+  </script>
+</body>
+</html>

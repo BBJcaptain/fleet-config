@@ -15,7 +15,7 @@
     Encryption needs a secure context (HTTPS), e.g. GitHub Pages.
   -->
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; script-src 'self' 'sha256-aCcoQogUXq1/O0pZsU4WYE1T2LipVv4URtdkmK7M5M0='; style-src 'sha256-EUMhEa+e+Za4lwze7NMZquircQQbh8Cnxh9o7e5iPzE=' 'sha256-k1CJvalQ5TLCKhdQZXmGGsq8rNRd6ll9eY5Qz7DFnZY='; img-src 'self' data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+        content="default-src 'none'; script-src 'self' 'sha256-jzpUK5TXF5KRHTjgYfLuC/BgBlV7SDqxOIpSCgyqqhU='; style-src 'sha256-EUMhEa+e+Za4lwze7NMZquircQQbh8Cnxh9o7e5iPzE=' 'sha256-k1CJvalQ5TLCKhdQZXmGGsq8rNRd6ll9eY5Qz7DFnZY='; img-src 'self' data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
   <title>A320 Fleet Configuration</title>
 
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -605,6 +605,17 @@
       else { openPwGate(); }
     }
 
+    /* Pull the latest data when the app is brought back to the foreground, so a
+       reopened (backgrounded / Home-Screen) copy never shows stale data. Safe:
+       only runs while unlocked, and a failed fetch keeps the current view. */
+    function refreshIfUnlocked() {
+      var pw = getPw();
+      if (!pw) return;                       // not unlocked — nothing to refresh
+      if (!byId("pwGate").hidden) return;    // password gate is open
+      setStatus("checking");
+      unlock(pw, false);
+    }
+
     function go(n) { if (!data || n < 0 || n >= data.aircraft.length) return; index = n; render(); }
 
     function openAbout() { byId("aboutAppVer").textContent = APP_VERSION; byId("aboutBody").scrollTop = 0; byId("aboutGate").hidden = false; }
@@ -626,7 +637,8 @@
       document.addEventListener("keydown", function (e) { if (e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return; if (e.key === "ArrowLeft") go(index - 1); else if (e.key === "ArrowRight") go(index + 1); });
       document.addEventListener("click", closeTips);
       ["click", "keydown", "touchstart", "mousemove"].forEach(function (ev) { document.addEventListener(ev, function () { if (byId("pwGate").hidden) resetLockTimer(); }, { passive: true }); });
-      document.addEventListener("visibilitychange", function () { if (document.hidden) return; if (!byId("pwGate").hidden) return; if (lastActivity && (Date.now() - lastActivity) > AUTO_LOCK_MS) doLock("Locked after inactivity. Enter the password to continue."); else resetLockTimer(); });
+      document.addEventListener("visibilitychange", function () { if (document.hidden) return; if (!byId("pwGate").hidden) return; if (lastActivity && (Date.now() - lastActivity) > AUTO_LOCK_MS) { doLock("Locked after inactivity. Enter the password to continue."); return; } resetLockTimer(); refreshIfUnlocked(); });
+      window.addEventListener("pageshow", function (e) { if (e.persisted) refreshIfUnlocked(); });   // bfcache restore (iOS) often skips visibilitychange
 
       render();
       if (!disclaimerAccepted()) { openDisclaimer(); } else { boot(); }
