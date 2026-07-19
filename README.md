@@ -107,11 +107,15 @@ who chooses to leak. Keep `editor.html` private; it holds the signing key.
 
 ## Admin: how to update the fleet
 
-Open the private `editor.html` (over `http://localhost` or in Safari/Firefox;
-Chrome blocks crypto on a plain local file). Enter the fleet password.
+Open the private `editor.html` **over `http://localhost` in Chrome/Edge**
+(Chrome blocks crypto on a plain local file, and localhost additionally lets
+**Encrypt & save** write straight back to the same file). Safari and Firefox also
+work, but can only download the result. Enter the fleet password.
+
+The editor opens **empty** — nothing is loaded until you choose a file.
 
 1. Start from the current data: **Load .enc**, choose `fleet-config.enc`; it
-   decrypts into the form. Or edit the pre loaded template.
+   decrypts into the form.
 2. Edit with the dropdowns. Every field is a controlled dropdown or a text box
    with suggestions, which keeps all cards aligned and consistent. The editor is
    a responsive two-column form that works on iPhone and iPad as well as desktop.
@@ -122,10 +126,19 @@ Chrome blocks crypto on a plain local file). Enter the fleet password.
    - **+ Add new Aircraft** creates a card with every field set to `—`, so you
      can see exactly what still needs verifying.
    - **Duplicate** / **Delete** per aircraft.
+   - **Merge collected .json** folds in notes taken with the collector, matched
+     by registration. It shows exactly what will be added and updated before you
+     confirm, and only applies fields that have a value — blanks never overwrite
+     existing data.
 3. **Set updated = today** and bump the **Data version**.
-4. **Encrypt & download .enc** (this also signs the data), then commit the new
-   `fleet-config.enc` to the repo root on `main`. Users get it on next launch or
-   by tapping **Verify**.
+4. **Encrypt & save .enc** (this also signs the data). In Chrome over localhost
+   it writes back to the same file; elsewhere it downloads a copy you must move
+   into place yourself.
+5. Publish. Users get it on next launch, or by tapping **Verify**.
+
+**Never upload a `.enc` to GitHub by hand.** Publishing copies your local folder
+*to* the repo, so a file uploaded directly would be silently overwritten — and
+the fleet would revert — the next time you publish.
 
 Changing the password: encrypt with a new one and tell your users; every device
 re-enters it once. Rotating the signing key is rare; if you ever do, update the
@@ -193,6 +206,31 @@ emails the maintainer; **Disclaimer** shows the full notice; the **lock** icon
 forgets the password (the encrypted offline copy is kept, so the app still opens
 without a connection once you re-enter the password). The layout is optimised for
 iPhone in portrait and adapts to a wider, roomier layout on iPad.
+
+### Collecting an aircraft's configuration in flight
+
+`collector.html` is a separate, **keyless** page for noting an airframe's
+configuration while you fly it. It contains no password, no signing key and no
+fleet data, and it never connects to anything — it cannot read or change the
+fleet. It only produces a small file you hand to the admin.
+
+1. On the ground with a connection, open
+   `https://bbjcaptain.github.io/fleet-config/collector.html` and
+   **Share → Add to Home Screen** ("Fleet Collector"). Opening it from Files or
+   iCloud will **not** work — iOS does not run the page properly from there and
+   the buttons will appear dead.
+2. Airborne, launch it from the Home Screen icon. Tap **Add aircraft to collect**
+   and fill in the **Registration first**, then whatever you can verify. Leave a
+   field blank if you did not check it — blanks are never merged, so they cannot
+   overwrite good data.
+3. Your work is **saved on the device automatically** after every change (green
+   ✓ Saved stamp). It survives closing the app, a reload, or the phone reclaiming
+   memory, and reloads itself next time you open the page.
+4. After landing, tap **Download collected .json** and send it to the admin.
+   Once the admin confirms it is merged and published, tap **Clear draft**.
+
+Do not leave a collection sitting on the phone for weeks — export it soon after
+landing, as the phone may clear stored site data after a period of disuse.
 
 ---
 
