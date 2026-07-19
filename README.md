@@ -67,7 +67,33 @@ The design assumes the file is public and hostile eyes will see it. Protection i
 
 Open the private `editor.html` **over `http://localhost` in Chrome/Edge**
 (Chrome blocks crypto on a plain local file, and localhost additionally lets
-**Encrypt & save** write straight back to the same file). Safari and Firefox also work, but can only download the result. Enter the fleet password.
+**Encrypt & save to iCloud** write straight back to the same file). Safari and Firefox also work, but can only download the result. Enter the fleet password.
+
+### Running the editor locally
+
+Double-clicking `editor.html` does **not** work: Chrome disables Web Crypto on
+`file://` pages, so nothing can be decrypted or signed. Serve the folder instead:
+
+```bash
+cd "/path/to/320config"
+python3 -m http.server 8000 --bind 127.0.0.1
+```
+
+then open `http://127.0.0.1:8000/editor.html`.
+
+> ⚠️ **Always include `--bind 127.0.0.1`.** Without it, Python's `http.server`
+> listens on *every* network interface, which publishes the whole project folder
+> — including `editor.html` and the **private signing key inside it** — to anyone
+> on the same Wi-Fi. On a hotel or airport network that is a real key-compromise
+> risk. With the bind flag the server is reachable only from the machine itself.
+
+Stop the server with **Ctrl-C**, or `pkill -f "http.server 8000"`.
+
+**One-click launchers.** Two small macOS apps (**Fleet Editor** and **Fleet
+Collector**) do the above automatically — start the server bound to localhost,
+wait for it, and open the right page in Chrome. They are kept with the private
+files, never in this repository, and can be rebuilt at any time. See
+`HANDOVER.md` for details.
 
 The editor opens **empty** — nothing is loaded until you choose a file.
 
