@@ -17,6 +17,11 @@ Public, safe to publish:
 - `collector.html` — keyless, offline field-collector page (holds no key and no
   fleet data; safe to publish). Used to jot an aircraft's config in the air.
 - `fleet-config.enc` — the encrypted, signed fleet database (ciphertext).
+- `sw.js` — service worker. Pre-caches the app and the encrypted data so both
+  pages open **without a connection** (in flight). Bump `CACHE_VERSION` when
+  publishing — `publish.command` does this automatically.
+- `manifest.json` / `manifest-collector.json` — Add-to-Home-Screen definitions
+  for the viewer and the collector.
 - `UI/` — static assets:
   - `UI/icon.png` — favicon and Home Screen icon.
   - `UI/carbon.png` — background texture used in the header and footer.
@@ -159,6 +164,22 @@ Do steps 1 to 3 once; after that the app is an icon on your Home Screen.
 3. Open it from the icon, accept the disclaimer, and enter the **fleet password**
    your admin gave you. The password is kept for the session only, so you enter
    it again each time you open the app fresh (and after Lock or 15 minutes idle).
+
+### Using it in flight (no connection)
+
+The app is built to work offline, but it must be **opened once on the ground with
+a connection** first — that is when it stores itself and the encrypted fleet data
+on your device. After that:
+
+- Launch it from the Home Screen icon as normal; it opens with no signal.
+- Enter the fleet password (asked after every fresh start) — decryption happens
+  entirely on your device.
+- The status will read **offline**, and the footer shows the **data version and
+  the date it was last updated**, so you can always see how current it is.
+
+**Recommended before every flight:** open the app once at the gate and unlock it.
+That refreshes the fleet data and keeps the offline copy current. Offline you are
+always looking at the last version you downloaded — never a live one.
 
 Day to day: the top-right shows an **ENCRYPTED** badge and a live status dot
 (hover or tap for detail); the footer shows "Up to date" with the data version,

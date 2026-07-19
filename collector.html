@@ -15,8 +15,15 @@
     itself — the trusted editor on the ground remains the only thing that can.
   -->
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; base-uri 'none'; form-action 'none'">
+        content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'self'; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
   <title>Fleet Field Collector</title>
+  <link rel="manifest" href="manifest-collector.json">
+  <link rel="apple-touch-icon" href="UI/icon.png">
+  <link rel="icon" href="UI/icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Collector">
+  <meta name="theme-color" content="#0b3f86">
   <style>
     :root { --blue-bg:#0b3f86; --blue-deep:#072e63; --panel:rgba(255,255,255,0.08); --panel-2:rgba(255,255,255,0.14);
       --line:rgba(255,255,255,0.22); --ink:#fff; --ink-soft:rgba(255,255,255,0.72); --accent:#8dc0ff; --good:#7ef0a6; --danger:#ff9a9d;
@@ -65,6 +72,7 @@
     .status { font-size: 12.5px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 12px 0; min-height: 20px; }
     .status b { color: var(--good); } .status.err b { color: var(--danger); }
     .hint { font-size: 12px; color: var(--ink-soft); line-height: 1.6; }
+    .savedtag { font-size: 11.5px; color: var(--good); align-self: center; }
     code { font-family: var(--mono); color: var(--accent); }
     input[type="file"] { display: none; }
   </style>
@@ -96,12 +104,15 @@
   <div class="status" id="status">Empty. Tap <b>Add aircraft to collect</b> and fill in what you see on the airframe.</div>
 
   <div class="hint">
-    Fill in the <b>Registration</b> first — that is how the editor matches your notes to the right airframe when merging (an unknown registration is added as a new aircraft). Leave a field blank if you did not check it; blank fields are not merged, so they will not overwrite existing data. Dropdown values match the app exactly; free-text boxes remember your own entries on this device.
+    Fill in the <b>Registration</b> first — that is how the editor matches your notes to the right airframe when merging (an unknown registration is added as a new aircraft). Leave a field blank if you did not check it; blank fields are not merged, so they will not overwrite existing data. Dropdown values match the app exactly; free-text boxes remember your own entries on this device.<br>
+    <b>Your work is saved automatically on this device</b> after every change, so it survives closing the app, a reload, or the phone reclaiming memory in flight — the green “Saved” stamp shows the last save. It reloads by itself next time you open the page. When you are back on the ground, tap <b>Download collected .json</b>, merge it in the editor, then tap <b>Clear draft</b> to start clean.
   </div>
 
   <div class="actions">
     <button id="btnDownload" class="primary">Download collected .json</button>
     <button id="btnCopy" class="mini">Copy JSON</button>
+    <button id="btnClear" class="mini danger">Clear draft</button>
+    <span id="savedTag" class="savedtag" hidden></span>
   </div>
 
   <script>
@@ -147,6 +158,31 @@
     ];
 
     var fleet = [], curIndex = 0;
+
+    /* ---- Draft autosave -------------------------------------------------
+       Collected data is written to this device after every change, so it
+       survives a reload, the app being closed, or an iOS memory purge in
+       flight. Stored locally only — it is never transmitted anywhere.      */
+    var DRAFT_KEY = "fleetcollector.draft";
+    var saveTimer = null;
+    function saveDraft() {
+      try {
+        window.localStorage.setItem(DRAFT_KEY, JSON.stringify({ savedAt: new Date().toISOString(), aircraft: fleet.map(serializeAircraft) }));
+        showSaved(new Date());
+      } catch (e) {
+        setStatus("WARNING: could not save on this device (storage full or private browsing). Download the .json now so you do not lose it.", true);
+      }
+    }
+    function scheduleSave() { if (saveTimer) clearTimeout(saveTimer); saveTimer = setTimeout(saveDraft, 250); }
+    function loadDraft() {
+      try { var raw = window.localStorage.getItem(DRAFT_KEY); if (!raw) return null; var d = JSON.parse(raw); return (d && Array.isArray(d.aircraft)) ? d : null; } catch (e) { return null; }
+    }
+    function clearDraft() { try { window.localStorage.removeItem(DRAFT_KEY); } catch (e) {} }
+    function showSaved(d) {
+      var t = byId("savedTag"); if (!t) return;
+      t.textContent = "✓ Saved on this device " + d.toLocaleTimeString();
+      t.hidden = false;
+    }
 
     /* ---- Custom dropdown options (persist on this device) ---- */
     var NEWOPT = "--- New Option ---";
@@ -236,7 +272,14 @@
         input = el("input", { attrs: { type: "text" } });
         if (f.placeholder) input.setAttribute("placeholder", f.placeholder);
         input.value = ac[f.k] == null ? "" : String(ac[f.k]);
-        input.addEventListener("input", function () { ac[f.k] = input.value; if (f.k === "registration" && ac.__regEl) ac.__regEl.textContent = input.value || "(no reg)"; });
+        input.addEventListener("input", function () {
+          ac[f.k] = input.value;
+          if (f.k === "registration") {
+            if (ac.__regEl) ac.__regEl.textContent = input.value || "(no reg)";
+            var sel = byId("acSelect");                                    // keep the aircraft selector in step as you type
+            if (sel && sel.options[idx]) sel.options[idx].text = input.value || "(no reg)";
+          }
+        });
       }
       wrap.appendChild(input);
       return wrap;
@@ -250,9 +293,9 @@
       head.appendChild(reg);
       head.appendChild(el("div", { cls: "spacer" }));
       var dup = el("button", { cls: "mini", text: "Duplicate" });
-      dup.addEventListener("click", function () { var copy = JSON.parse(JSON.stringify(serializeAircraft(ac))); copy.id = "ac-" + Date.now(); fleet.splice(idx + 1, 0, copy); curIndex = idx + 1; render(); });
+      dup.addEventListener("click", function () { var copy = JSON.parse(JSON.stringify(serializeAircraft(ac))); copy.id = "ac-" + Date.now(); fleet.splice(idx + 1, 0, copy); curIndex = idx + 1; render(); saveDraft(); });
       var del = el("button", { cls: "mini danger", text: "Delete" });
-      del.addEventListener("click", function () { if (window.confirm("Delete " + (ac.registration || "this aircraft") + "?")) { fleet.splice(idx, 1); render(); } });
+      del.addEventListener("click", function () { if (window.confirm("Delete " + (ac.registration || "this aircraft") + "?")) { fleet.splice(idx, 1); render(); saveDraft(); } });
       head.appendChild(dup); head.appendChild(del);
       card.appendChild(head);
 
@@ -309,14 +352,14 @@
       byId("btnAdd").addEventListener("click", function () {
         var ac = {};
         FORM.forEach(function (g) { g.fields.forEach(function (f) { ac[f.k] = null; }); });
-        fleet.push(ac); curIndex = fleet.length - 1; render();
+        fleet.push(ac); curIndex = fleet.length - 1; render(); saveDraft();
         window.scrollTo(0, 0);
         setStatus("New aircraft added, every field blank. Fill in the registration and what you can verify.");
       });
       byId("acSelect").addEventListener("change", function (e) { curIndex = Number(e.target.value); render(); window.scrollTo(0, 0); });
 
       byId("btnLoadJson").addEventListener("click", function () { byId("fileJson").click(); });
-      byId("fileJson").addEventListener("change", function () { readFile(this, function (txt) { try { loadData(JSON.parse(txt)); setStatus("Loaded collected JSON. Edit or add more, then download again."); } catch (e) { setStatus("That file is not valid JSON.", true); } }); });
+      byId("fileJson").addEventListener("change", function () { readFile(this, function (txt) { try { loadData(JSON.parse(txt)); saveDraft(); setStatus("Loaded collected JSON. Edit or add more, then download again."); } catch (e) { setStatus("That file is not valid JSON.", true); } }); });
 
       byId("btnDownload").addEventListener("click", function () {
         if (!fleet.length) { setStatus("Nothing to download yet — add an aircraft first.", true); return; }
@@ -325,7 +368,35 @@
       });
       byId("btnCopy").addEventListener("click", function () { if (!fleet.length) { setStatus("Nothing to copy yet — add an aircraft first.", true); return; } copyText(buildJson()); });
 
-      render();
+      byId("btnClear").addEventListener("click", function () {
+        if (!fleet.length) { setStatus("Nothing to clear."); return; }
+        if (!window.confirm("Clear all collected aircraft from this device?\n\nMake sure you have downloaded the .json first — this cannot be undone.")) return;
+        fleet = []; curIndex = 0; clearDraft(); render();
+        byId("savedTag").hidden = true;
+        setStatus("Draft cleared. Tap “Add aircraft to collect” to start again.");
+      });
+
+      /* Autosave on every field edit (delegated: covers text, selects, dates, textareas) */
+      var listEl = byId("aircraftList");
+      listEl.addEventListener("input", scheduleSave);                                        // debounced while typing
+      listEl.addEventListener("change", function () { saveDraft(); });                       // commit points (selects, blur): save at once
+      window.addEventListener("pagehide", function () { if (fleet.length) saveDraft(); });   // iOS suspend / navigation away
+      document.addEventListener("visibilitychange", function () { if (document.hidden && fleet.length) saveDraft(); });
+
+      /* Offline capability: pre-caches this page so it opens with no connection (in flight). */
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("sw.js").catch(function () { /* unsupported or blocked: drafts still autosave locally */ });
+      }
+
+      /* Restore anything collected in a previous session (survives reload / app close) */
+      var draft = loadDraft();
+      if (draft && draft.aircraft.length) {
+        fleet = draft.aircraft; curIndex = 0; render();
+        showSaved(new Date(draft.savedAt));
+        setStatus("Restored " + draft.aircraft.length + " aircraft collected earlier (saved " + new Date(draft.savedAt).toLocaleString() + "). Add more, or download when you land.");
+      } else {
+        render();
+      }
     }
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
   })();

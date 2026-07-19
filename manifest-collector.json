@@ -1,0 +1,19 @@
+{
+  "name": "Fleet Field Collector",
+  "short_name": "Collector",
+  "description": "Offline, keyless form for jotting an aircraft's configuration in flight. Holds no key and no fleet data.",
+  "start_url": "collector.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b3f86",
+  "theme_color": "#0b3f86",
+  "icons": [
+    {
+      "src": "UI/icon.png",
+      "sizes": "360x360",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -15,7 +15,7 @@
     Encryption needs a secure context (HTTPS), e.g. GitHub Pages.
   -->
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; script-src 'self' 'sha256-jzpUK5TXF5KRHTjgYfLuC/BgBlV7SDqxOIpSCgyqqhU='; style-src 'sha256-+Qxx9/DusRx7V/cqPjDsZstFxPTBCUl7e8xeET7TArM=' 'sha256-ZeKcezLVoSYVQn5q+IcWU3Yg/yJJ+m4r+mmBiOxLcUQ='; img-src 'self' data:; connect-src 'self' https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+        content="default-src 'none'; script-src 'self' 'sha256-z3bBUhnBDVojq5D6OEz5SHClvDAJ/AwXgUvKvMAgS3U='; style-src 'sha256-+Qxx9/DusRx7V/cqPjDsZstFxPTBCUl7e8xeET7TArM=' 'sha256-ZeKcezLVoSYVQn5q+IcWU3Yg/yJJ+m4r+mmBiOxLcUQ='; img-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
   <title>A320 Fleet Configuration</title>
 
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -25,6 +25,7 @@
   <meta name="theme-color" content="#0b3f86">
   <link rel="apple-touch-icon" href="UI/icon.png">
   <link rel="icon" href="UI/icon.png">
+  <link rel="manifest" href="manifest.json">
 
   <style>
   :root {
@@ -300,7 +301,7 @@
   "use strict";
   (function () {
     /* ===== Encrypted update source (public repo holds ciphertext only) ===== */
-    var CONFIG_URL = "https://raw.githubusercontent.com/BBJcaptain/fleet-config/main/fleet-config.enc";
+    var CONFIG_URL = "fleet-config.enc";   // same-origin (served by GitHub Pages) so the service worker can cache it for offline use
     var APP_VERSION = "1.6";
     var CACHE_KEY  = "a320config.enc.cache";     // { text, syncedAt }
     var PW_KEY     = "a320config.pw";            // lightly obfuscated password (device convenience only)
@@ -509,7 +510,11 @@
 
     function fetchEnc() {
       var url = CONFIG_URL + (CONFIG_URL.indexOf("?") >= 0 ? "&" : "?") + "t=" + Date.now();
-      return window.fetch(url, { cache: "no-store", redirect: "follow" }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); });
+      return window.fetch(url, { cache: "no-store", redirect: "follow" }).then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        var cached = r.headers.get("X-From-Cache") === "1";   // the service worker served its offline copy
+        return r.text().then(function (t) { return { text: t, fromCache: cached }; });
+      });
     }
 
     /* Main unlock + update. Returns a promise resolving true if data is shown. */
@@ -524,9 +529,14 @@
       }
       return chain.then(function () {
         setStatus("checking");
-        return fetchEnc().then(function (text) {
-          return decryptEnvelope(text, pw).then(function (pt) {
-            return applyPlaintext(pt, "live", new Date().toISOString()).then(function () { writeCache(text); shown = true; setStatus("live"); });
+        return fetchEnc().then(function (res) {
+          return decryptEnvelope(res.text, pw).then(function (pt) {
+            if (res.fromCache) {
+              // Offline: the service worker served its stored copy. Show it, but never claim a fresh sync.
+              var meta = readCache();
+              return applyPlaintext(pt, "cached", meta && meta.syncedAt).then(function () { shown = true; setStatus("offline"); });
+            }
+            return applyPlaintext(pt, "live", new Date().toISOString()).then(function () { writeCache(res.text); shown = true; setStatus("live"); });
           }).catch(function (e) {
             if (e && e.message === "bad-signature") { if (!shown && fromGate) throw new Error("bad-signature"); setStatus("error"); return; }
             if (!shown && fromGate) throw new Error("wrong-pw");   // no cache and wrong password
@@ -639,6 +649,12 @@
       ["click", "keydown", "touchstart", "mousemove"].forEach(function (ev) { document.addEventListener(ev, function () { if (byId("pwGate").hidden) resetLockTimer(); }, { passive: true }); });
       document.addEventListener("visibilitychange", function () { if (document.hidden) return; if (!byId("pwGate").hidden) return; if (lastActivity && (Date.now() - lastActivity) > AUTO_LOCK_MS) { doLock("Locked after inactivity. Enter the password to continue."); return; } resetLockTimer(); refreshIfUnlocked(); });
       window.addEventListener("pageshow", function (e) { if (e.persisted) refreshIfUnlocked(); });   // bfcache restore (iOS) often skips visibilitychange
+
+      /* Offline capability: the service worker pre-caches the app and the encrypted
+         data so the Home Screen icon opens reliably with no connection (in flight). */
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("sw.js").catch(function () { /* unsupported or blocked: app still runs from the local cache */ });
+      }
 
       render();
       if (!disclaimerAccepted()) { openDisclaimer(); } else { boot(); }
