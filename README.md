@@ -23,7 +23,10 @@ Public, safe to publish:
 - `manifest.json` / `manifest-collector.json` — Add-to-Home-Screen definitions
   for the viewer and the collector.
 - `UI/` — static assets:
-  - `UI/icon.png` — favicon and Home Screen icon.
+  - `UI/icon1.png` — icon for the **viewer** (`index.html`).
+  - `UI/icon2.png` — icon for the **editor** (private, not published here).
+  - `UI/icon3.png` — icon for the **collector** (`collector.html`).
+  - `UI/icon.png` — previous icon, no longer referenced.
   - `UI/carbon.png` — background texture used in the header and footer.
 - `README.md` — this file.
 
