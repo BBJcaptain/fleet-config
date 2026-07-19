@@ -10,6 +10,12 @@
   "theme_color": "#0b3f86",
   "icons": [
     {
+      "src": "UI/icon3-180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
       "src": "UI/icon3.png",
       "sizes": "450x450",
       "type": "image/png",

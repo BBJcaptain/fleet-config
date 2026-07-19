@@ -1,5 +1,5 @@
 {
-  "name": "A320 Fleet Configuration",
+  "name": "Fleet Config",
   "short_name": "Fleet Config",
   "description": "Encrypted, offline-capable reference for the operational configuration of an A320 family fleet.",
   "start_url": "index.html",
@@ -9,6 +9,12 @@
   "background_color": "#081a3a",
   "theme_color": "#0b3f86",
   "icons": [
+    {
+      "src": "UI/icon1-180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "UI/icon1.png",
       "sizes": "450x450",
