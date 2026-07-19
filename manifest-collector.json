@@ -1,6 +1,6 @@
 {
-  "name": "Fleet Field Collector",
-  "short_name": "Collector",
+  "name": "Fleet Collector",
+  "short_name": "Fleet Collector",
   "description": "Offline, keyless form for jotting an aircraft's configuration in flight. Holds no key and no fleet data.",
   "start_url": "collector.html",
   "scope": "./",

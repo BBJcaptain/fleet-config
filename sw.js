@@ -19,7 +19,7 @@
 */
 "use strict";
 
-var CACHE_VERSION = "fleet-20260719-132113";
+var CACHE_VERSION = "fleet-20260719-132757";
 
 var DATA = "fleet-config.enc";
 var SHELL = [
