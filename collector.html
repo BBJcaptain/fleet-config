@@ -26,17 +26,37 @@
   <meta name="apple-mobile-web-app-title" content="Fleet Collector">
   <meta name="theme-color" content="#0b3f86">
   <style>
-    :root { --blue-bg:#0b3f86; --blue-deep:#072e63; --panel:rgba(255,255,255,0.08); --panel-2:rgba(255,255,255,0.14);
-      --line:rgba(255,255,255,0.22); --ink:#fff; --ink-soft:rgba(255,255,255,0.72); --accent:#8dc0ff; --good:#7ef0a6; --danger:#ff9a9d;
-      --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace; --sans:"Helvetica Neue",Helvetica,Arial,system-ui,sans-serif; }
+    /* Palette shared with the viewer and editor — same product, same colours. */
+    :root { --blue-bg:#081a3a; --blue-deep:#0a1f45; --blue-bar:#0b224d;
+      --panel:rgba(255,255,255,0.06); --panel-2:rgba(255,255,255,0.12); --line:rgba(255,255,255,0.16);
+      --ink:#eaf1fb; --ink-soft:rgba(234,241,251,0.66); --accent:#6cace4; --good:#5ad19b; --amber:#ffcf6b; --danger:#ff8a90;
+      --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace; --sans:"Helvetica Neue",Helvetica,Arial,"Segoe UI",system-ui,sans-serif;
+      --display:"Futura","Avenir Next","Century Gothic",var(--sans); }
     * { box-sizing: border-box; }
-    body { margin: 0 auto; font-family: var(--sans); background: var(--blue-bg); color: var(--ink); padding: 16px 14px 132px; max-width: 1000px; }
-    h1 { font-size: 19px; letter-spacing: .3px; margin: 4px 0 2px; }
-    .sub { color: var(--ink-soft); font-size: 12.5px; margin-bottom: 12px; }
+    body { margin: 0 auto; font-family: var(--sans); color: var(--ink); padding: 0 16px 136px; max-width: 1000px;
+      background: linear-gradient(180deg, #0b224d 0%, #081a3a 45%, #06122a 100%) fixed; }
+    h1 { font-size: 16px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; margin: 0; }
+
+    /* Sticky carbon header — same app-bar language as the viewer and editor */
+    .app-bar { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; gap: 12px;
+      margin: 0 -16px 16px; padding: 12px 16px;
+      background: linear-gradient(rgba(11,34,77,0.84), rgba(9,26,60,0.92)), url("UI/carbon.png");
+      background-size: cover; background-position: center;
+      border-bottom: 1px solid rgba(108,172,228,0.40); }
+    .brandmark { width: 40px; height: 40px; border-radius: 10px; flex: 0 0 auto; object-fit: cover;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.38), 0 0 0 1px rgba(255,255,255,0.16); }
+    .brandtext { display: flex; flex-direction: column; gap: 4px; }
+    .brandtext .accentbar { width: 28px; height: 3px; background: var(--accent); border-radius: 2px; }
+    .app-bar .role { margin-left: auto; font-size: 10.5px; letter-spacing: .4px; text-transform: uppercase;
+      color: var(--ink-soft); font-family: var(--mono); }
+    .sub { color: var(--ink-soft); font-size: 12.5px; margin: 0 0 12px; line-height: 1.6; }
     .safe { font-size: 12px; line-height: 1.5; background: rgba(126,240,166,0.10); border: 1px solid rgba(126,240,166,0.4); border-radius: 10px; padding: 10px 12px; margin-bottom: 16px; color: var(--ink); }
     .safe b { color: var(--good); }
 
-    .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: var(--blue-deep); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-bottom: 14px; }
+    /* Glass panels over the texture, 8px rhythm — matches the editor */
+    .bar, .ac { background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 8px 24px rgba(0,0,0,0.22); }
+    .bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 12px 16px; margin-bottom: 16px; }
     .bar label { font-size: 12.5px; color: var(--ink-soft); }
     input, select, textarea { font-family: var(--sans); font-size: 13px; color: var(--ink); background: var(--blue-deep); border: 1px solid var(--line); border-radius: 8px; padding: 8px 9px; }
     input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
@@ -47,14 +67,22 @@
     .acbar select { min-width: 200px; font-size: 14px; }
     .acbar .pos { font-size: 12.5px; color: var(--ink-soft); font-family: var(--mono); }
 
-    .ac { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 0; margin-bottom: 14px; overflow: hidden; }
-    .ac-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--blue-deep); border-bottom: 1px solid var(--line); }
-    .ac-head .reg { font-family: var(--mono); font-size: 16px; font-weight: 700; letter-spacing: 1px; }
+    .ac { padding: 0; margin-bottom: 16px; overflow: hidden; }
+    .ac-head { display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+      background: linear-gradient(180deg,#0e2a5c,#0a1f45); border-bottom: 1px solid var(--line); }
+    /* Registration in the viewer's gradient display face */
+    .ac-head .reg { font-family: var(--display); font-size: 26px; font-weight: 600; letter-spacing: 3px;
+      background: linear-gradient(96deg, #ffffff 0%, #cfe6ff 50%, var(--accent) 100%);
+      -webkit-background-clip: text; background-clip: text; color: var(--ink); -webkit-text-fill-color: transparent; }
     .ac-head .spacer { flex: 1; }
     .ac-body { padding: 12px 14px; }
     .grp { margin-top: 12px; }
     .grp:first-child { margin-top: 0; }
-    .grp h3 { margin: 0 0 8px; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); border-bottom: 1px solid var(--line); padding-bottom: 5px; }
+    /* Section heading with the viewer's short accent rule underneath */
+    .grp h3 { margin: 0 0 12px; font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase;
+      color: var(--ink); position: relative; padding-bottom: 9px; }
+    .grp h3::after { content: ""; position: absolute; left: 0; bottom: 0; width: 28px; height: 3px;
+      background: var(--accent); border-radius: 2px; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
     .grid.wide { grid-template-columns: 1fr; }
     @media (min-width: 760px) { .grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); } }
@@ -80,7 +108,19 @@
     button.mini { font-size: 12px; padding: 6px 10px; }
     button.danger { border-color: var(--danger); color: var(--danger); }
 
-    .actions { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(7,46,99,0.97); border-top: 1px solid var(--line); padding: 12px 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: center; }
+    .actions { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px;
+      display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: center;
+      background: linear-gradient(rgba(11,34,77,0.88), rgba(6,18,42,0.95)), url("UI/carbon.png");
+      background-size: cover; background-position: center;
+      border-top: 1px solid rgba(108,172,228,0.32);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+    /* Tier 3: restrained motion, matching the editor */
+    button, input, select, textarea { transition: background-color .12s ease, border-color .12s ease, color .12s ease; }
+    .status { animation: fadeIn .18s ease both; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: none; } }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+    }
     .status { font-size: 12.5px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 12px 0; min-height: 20px; }
     .status b { color: var(--good); } .status.err b { color: var(--danger); }
     .hint { font-size: 12px; color: var(--ink-soft); line-height: 1.6; }
@@ -90,7 +130,14 @@
   </style>
 </head>
 <body>
-  <h1>Fleet Collector</h1>
+  <header class="app-bar">
+    <img class="brandmark" src="UI/icon3-180.png" alt="" width="40" height="40">
+    <div class="brandtext">
+      <h1>Fleet Collector</h1>
+      <span class="accentbar" aria-hidden="true"></span>
+    </div>
+    <span class="role">Offline · Keyless</span>
+  </header>
   <div class="sub">Jot down an aircraft's configuration offline, then <b>Download collected .json</b> and merge it into the fleet later with the editor.</div>
 
   <div class="safe">
