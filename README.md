@@ -23,7 +23,6 @@ Public, safe to publish:
   - `UI/icon1.png` — icon for the **viewer** (`index.html`).
   - `UI/icon2.png` — icon for the **editor** (private, not published here).
   - `UI/icon3.png` — icon for the **collector** (`collector.html`).
-  - `UI/icon.png` — previous icon, no longer referenced.
   - `UI/carbon.png` — background texture used in the header and footer.
 - `README.md` — this file.
 
@@ -54,7 +53,13 @@ The design assumes the file is public and hostile eyes will see it. Protection i
 - **Session control (session only password).** The password is **never written to
   the device**. It is held in memory for the session only, so the user enters it once each time the app is opened fresh. Tapping **Lock**, or the 15 minute inactivity auto lock, clears the password from memory. The **encrypted** offline copy (ciphertext only) is deliberately kept, so the app still opens without aconnection — for example in flight — once the password is re-entered. Nothing readable is stored on the device: the cache cannot be opened without the password.
 
-- **Guess resistance.** After repeated wrong passwords the app adds an increasing delay before the next attempt (up to 30 seconds), raising the cost of brute force on top of the slow KDF.
+- **Guess resistance.** After repeated wrong passwords the app adds an increasing
+  delay before the next attempt (up to 30 seconds). To be clear about what this
+  does and does not do: it only slows guessing **through this app's own password
+  box**. Anyone who downloads the encrypted file can attack it offline, where no
+  delay applies. The real protection there is the slow key derivation
+  (PBKDF2-HMAC-SHA256, 600,000 iterations) combined with a strong passphrase —
+  the passphrase is what actually keeps the data safe.
 
 - **Reduced attack surface.** A strict **Content Security Policy with no
   `unsafe-inline`** (inline script and style are pinned by SHA-256 hash) blocks injected code. The app talks only to its own origin (the encrypted data file is served from the same GitHub Pages site), nothing else. Data is rendered with `textContent` only, never `innerHTML`. There are **no accounts, no analytics, and no tracking**.

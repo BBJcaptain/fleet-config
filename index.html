@@ -15,14 +15,14 @@
     Encryption needs a secure context (HTTPS), e.g. GitHub Pages.
   -->
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; script-src 'self' 'sha256-q+dLn2iiadAJIAJujY8u4nfMjp5Kpi0DSLniCUubxPQ='; style-src 'sha256-t6PGvScgGb+RoPjDr0X+fqYKaSthRDxTBet8+xHfcOc=' 'sha256-ZeKcezLVoSYVQn5q+IcWU3Yg/yJJ+m4r+mmBiOxLcUQ='; img-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+        content="default-src 'none'; script-src 'self' 'sha256-XQi4qUesV+Fw2I6RBa7KBvXUQx6XGok/zO3LsWPNGwc='; style-src 'sha256-mO7jsnJmeUswL/iCFSIP/ftYWemWofDh6eE9b7FBqyQ=' 'sha256-ZeKcezLVoSYVQn5q+IcWU3Yg/yJJ+m4r+mmBiOxLcUQ='; img-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
   <title>A320 Fleet Configuration</title>
 
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Fleet Config">
-  <meta name="theme-color" content="#0b3f86">
+  <meta name="theme-color" content="#0b224d">
   <link rel="apple-touch-icon" sizes="180x180" href="UI/icon1-180.png">
   <link rel="apple-touch-icon" href="UI/icon1-180.png">
   <link rel="icon" href="UI/icon1.png">
@@ -128,6 +128,13 @@
   #pwInput { width: 100%; padding: 12px 12px; font-size: 16px; color: var(--ink); background: var(--blue-bg); border: 1px solid var(--line); border-radius: 10px; font-family: var(--mono); }
   #pwInput:focus { outline: none; border-color: var(--accent); }
   .pw-err { color: var(--danger) !important; font-weight: 600; }
+
+  /* Anti-rollback warning strip — deliberately loud, this is a data-integrity alert */
+  .rollbackbar { display: flex; align-items: flex-start; gap: 10px; padding: 10px 16px;
+    background: rgba(255,138,144,0.16); border-bottom: 1px solid rgba(255,138,144,0.55);
+    color: #ffd9db; font-size: 12px; line-height: 1.5; }
+  .rollbackbar[hidden] { display: none; }
+  .rbdot { width: 9px; height: 9px; border-radius: 50%; background: var(--danger); flex: 0 0 auto; margin-top: 4px; }
 
   /* ---- Tier 3: ⌘K palette + restrained motion ---- */
   .cmdk { position: fixed; inset: 0; z-index: 900; background: rgba(3,20,45,0.72);
@@ -235,6 +242,11 @@
       </button>
     </div>
   </header>
+
+  <div class="rollbackbar" id="rollbackBar" hidden role="alert">
+    <span class="rbdot" aria-hidden="true"></span>
+    <span id="rollbackText"></span>
+  </div>
 
   <div class="hero" aria-hidden="true"></div>
 
@@ -421,6 +433,58 @@
     function clearStoredPw() { try { window.localStorage.removeItem(PW_KEY); } catch (e) {} }   // purge any legacy stored password
     function clearPw() { currentPw = null; clearStoredPw(); }
 
+    /* ---- Anti-rollback ------------------------------------------------------
+       A correctly signed but OLDER file must not silently replace newer data.
+       Without this, anyone able to serve the file (or restore an old commit)
+       could quietly put pilots back on a superseded configuration.
+       We remember the highest data version this device has ever verified and
+       refuse to step backwards from it.                                        */
+    var MAXVER_KEY = "a320config.maxver";
+    function readMaxVer() { try { return JSON.parse(window.localStorage.getItem(MAXVER_KEY) || "null"); } catch (e) { return null; } }
+    function writeMaxVer(o) { try { window.localStorage.setItem(MAXVER_KEY, JSON.stringify(o)); } catch (e) {} }
+    function verParts(v) {
+      var p = String(v || "").split(/[^0-9]+/).filter(function (x) { return x !== ""; }).map(Number);
+      return p.length ? p : null;
+    }
+    function cmpParts(a, b) {
+      for (var i = 0, n = Math.max(a.length, b.length); i < n; i++) {
+        var x = a[i] || 0, y = b[i] || 0;
+        if (x !== y) return x < y ? -1 : 1;
+      }
+      return 0;
+    }
+    /* accepts dd-mm-yyyy or yyyy-mm-dd */
+    function dateVal(s) {
+      s = String(s || "").trim();
+      var m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(s);
+      if (m) return Date.UTC(+m[3], +m[2] - 1, +m[1]);
+      m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+      if (m) return Date.UTC(+m[1], +m[2] - 1, +m[3]);
+      return null;
+    }
+    /* Returns the previously-seen release if `meta` is a downgrade, else null
+       (and records the new high-water mark). */
+    function rollbackCheck(meta) {
+      var incoming = { version: (meta && meta.version) || "", updated: (meta && meta.updated) || "" };
+      var seen = readMaxVer();
+      if (!seen) { writeMaxVer(incoming); return null; }
+      var older = false, a = verParts(incoming.version), b = verParts(seen.version);
+      if (a && b) older = cmpParts(a, b) < 0;
+      else { var ta = dateVal(incoming.updated), tb = dateVal(seen.updated); if (ta !== null && tb !== null) older = ta < tb; }
+      if (older) return seen;
+      writeMaxVer(incoming);
+      return null;
+    }
+    function showRollback(incoming, seen) {
+      var b = byId("rollbackBar"); if (!b) return;
+      byId("rollbackText").textContent =
+        "The server offered an OLDER release (v" + (incoming.version || "?") + ", " + fmtDMY(incoming.updated) +
+        ") than the v" + (seen.version || "?") + " this device already verified. It was refused. " +
+        "You are still on the newer data. Tell the administrator.";
+      b.hidden = false;
+    }
+    function hideRollback() { var b = byId("rollbackBar"); if (b) b.hidden = true; }
+
     /* ---- Cache (ciphertext only; plaintext never persisted) ---- */
     function readCache() { try { var raw = window.localStorage.getItem(CACHE_KEY); return raw ? JSON.parse(raw) : null; } catch (e) { return null; } }
     function writeCache(text) { try { window.localStorage.setItem(CACHE_KEY, JSON.stringify({ text: text, syncedAt: new Date().toISOString() })); } catch (e) {} }
@@ -585,6 +649,17 @@
               var meta = readCache();
               return applyPlaintext(pt, "cached", meta && meta.syncedAt).then(function () { shown = true; setStatus("offline"); });
             }
+            /* Refuse a signed-but-older release rather than stepping backwards. */
+            var incomingMeta = {};
+            try { incomingMeta = (JSON.parse(pt) || {}).meta || {}; } catch (e) {}
+            var seen = rollbackCheck(incomingMeta);
+            if (seen) {
+              showRollback(incomingMeta, seen);
+              if (shown) { setStatus("error"); return; }              // keep the newer cached data on screen
+              // nothing shown yet: better stale-with-a-warning than nothing at all
+              return applyPlaintext(pt, "cached", null).then(function () { shown = true; setStatus("error"); });
+            }
+            hideRollback();
             return applyPlaintext(pt, "live", new Date().toISOString()).then(function () { writeCache(res.text); shown = true; setStatus("live"); });
           }).catch(function (e) {
             if (e && e.message === "bad-signature") { if (!shown && fromGate) throw new Error("bad-signature"); setStatus("error"); return; }

@@ -1,0 +1,26 @@
+# Backstop against ever committing private material to this public repo.
+#
+# publish.command only copies the github/ folder, so the private files below
+# normally cannot reach here at all. This file is the second line of defence
+# for the case where someone runs `git add` by hand in the clone.
+
+# The editor holds the ECDSA PRIVATE SIGNING KEY. Never in this repo.
+editor.html
+manifest-editor.json
+
+# Plaintext fleet data — the whole point is that only ciphertext is public.
+fleet-config.json
+fleet-config.csv
+*.plaintext.json
+
+# Owner tooling and notes
+publish.command
+PUBLISHING.md
+HANDOVER.md
+launchers/
+*.app/
+
+# Local noise
+.DS_Store
+*.swp
+*~
