@@ -59,7 +59,18 @@
     .grid.wide { grid-template-columns: 1fr; }
     @media (min-width: 760px) { .grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); } }
     .fld { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-    .fld label { font-size: 11px; color: var(--ink-soft); }
+    .fld { position: relative; }
+    .fld label { font-size: 11px; color: var(--ink-soft); display: flex; align-items: center; gap: 6px; }
+    /* Source tooltips — same visual language as the viewer and editor */
+    .tip-btn { width: 15px; height: 15px; flex: 0 0 auto; border-radius: 50%; border: 1px solid var(--line);
+      background: transparent; color: var(--accent); font-size: 10px; font-weight: 700; font-style: italic;
+      line-height: 1; padding: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+    .tip-btn:hover { border-color: var(--accent); }
+    .tip-btn.pending { color: var(--ink-soft); border-style: dashed; }   /* no reference recorded yet */
+    .tip-bubble { position: absolute; top: calc(100% - 4px); left: 4px; right: 4px; background: var(--blue-deep);
+      border: 1px solid var(--accent); border-radius: 8px; padding: 8px 10px; font-size: 11.5px; line-height: 1.45;
+      color: var(--ink); z-index: 40; box-shadow: 0 10px 24px rgba(0,0,0,0.45); white-space: pre-line; }
+    .tip-bubble[hidden] { display: none; }
     .fld input, .fld select, .fld textarea { width: 100%; }
     textarea { min-height: 60px; resize: vertical; }
 
@@ -115,6 +126,9 @@
     <button id="btnClear" class="mini danger">Clear draft</button>
     <span id="savedTag" class="savedtag" hidden></span>
   </div>
+
+  <!-- Shared source references — same file the viewer and editor use -->
+  <script src="UI/sources.js"></script>
 
   <script>
   "use strict";
@@ -205,6 +219,27 @@
     function setStatusNode(node, isErr) { var s = byId("status"); clear(s); s.className = "status" + (isErr ? " err" : ""); s.appendChild(node); }
     function setStatus(msg, isErr) { setStatusNode(document.createTextNode(msg), isErr); }
 
+    /* ---- Source tooltips (shared UI/sources.js — identical in all three apps) ---- */
+    var openTip = null;
+    function closeTips() { if (openTip) { openTip.setAttribute("hidden", ""); openTip = null; } }
+    function sourceFor(key) { try { return (window.FLEET_SOURCES && window.FLEET_SOURCES[key]) || ""; } catch (e) { return ""; } }
+    function attachTip(lab, wrap, f) {
+      var src = sourceFor(f.k);
+      if (!src) { wrap.appendChild(lab); return; }
+      var pending = /^source pending$/i.test(src);
+      var tb = el("button", { cls: "tip-btn" + (pending ? " pending" : ""), text: "i",
+        attrs: { type: "button", "aria-label": "Source for " + f.label } });
+      var bub = el("div", { cls: "tip-bubble", text: pending ? src : "Source: " + src, attrs: { hidden: "" } });
+      tb.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var wasOpen = !bub.hasAttribute("hidden");
+        closeTips();
+        if (!wasOpen) { bub.removeAttribute("hidden"); openTip = bub; }
+      });
+      lab.appendChild(tb);
+      wrap.appendChild(lab); wrap.appendChild(bub);
+    }
+
     /* ---- Serialize (canonical key order = app data order) ---- */
     function serializeAircraft(ac) {
       var o = { id: ac.id || ("ac-" + Date.now() + "-" + Math.floor(Math.random() * 1000)) };
@@ -216,7 +251,7 @@
     /* ---- Render ---- */
     function makeControl(ac, f, idx) {
       var wrap = el("div", { cls: "fld" });
-      wrap.appendChild(el("label", { text: f.label }));
+      attachTip(el("label", { text: f.label }), wrap, f);
       var input;
       if (f.type === "textarea") {
         input = el("textarea"); input.value = ac[f.k] == null ? "" : String(ac[f.k]);
@@ -357,6 +392,7 @@
         window.scrollTo(0, 0);
         setStatus("New aircraft added, every field blank. Fill in the registration and what you can verify.");
       });
+      document.addEventListener("click", closeTips);
       byId("acSelect").addEventListener("change", function (e) { curIndex = Number(e.target.value); render(); window.scrollTo(0, 0); });
 
       byId("btnLoadJson").addEventListener("click", function () { byId("fileJson").click(); });

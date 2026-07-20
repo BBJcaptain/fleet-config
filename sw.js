@@ -19,7 +19,7 @@
 */
 "use strict";
 
-var CACHE_VERSION = "fleet-20260719-232328";
+var CACHE_VERSION = "fleet-20260720-092501";
 
 var DATA = "fleet-config.enc";
 var SHELL = [
@@ -32,6 +32,7 @@ var SHELL = [
   "UI/icon1-180.png",
   "UI/icon3.png",
   "UI/icon3-180.png",
+  "UI/sources.js",
   "UI/carbon.png"
 ];
 

@@ -15,7 +15,7 @@
     Encryption needs a secure context (HTTPS), e.g. GitHub Pages.
   -->
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; script-src 'self' 'sha256-z3bBUhnBDVojq5D6OEz5SHClvDAJ/AwXgUvKvMAgS3U='; style-src 'sha256-+hM0fpJCHRkpTCLPvWtOUnTwfYDThntB49m4oHzi7ng=' 'sha256-ZeKcezLVoSYVQn5q+IcWU3Yg/yJJ+m4r+mmBiOxLcUQ='; img-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+        content="default-src 'none'; script-src 'self' 'sha256-Xs/vNAqEIIfOOhISIieeWXLOo8ilcB65jBr8fEYQuv8='; style-src 'sha256-eidawcS7BZZ83e3B9+roQ6FVgvyL9zbiiU3LUNbYKl0=' 'sha256-ZeKcezLVoSYVQn5q+IcWU3Yg/yJJ+m4r+mmBiOxLcUQ='; img-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
   <title>A320 Fleet Configuration</title>
 
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -91,7 +91,8 @@
   .field .label { font-size: 11px; color: var(--ink-soft); display: flex; align-items: center; gap: 6px; }
   .tip-btn { width: 15px; height: 15px; flex: 0 0 auto; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--accent); font-size: 10px; font-weight: 700; font-style: italic; line-height: 1; padding: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
   .tip-btn:hover { border-color: var(--accent); }
-  .tip-bubble { position: absolute; top: calc(100% - 4px); left: 8px; right: 8px; background: #0e2a5c; border: 1px solid var(--accent); border-radius: 8px; padding: 8px 10px; font-size: 11.5px; line-height: 1.45; color: var(--ink); z-index: 40; box-shadow: 0 10px 24px rgba(0,0,0,0.45); }
+  .tip-btn.pending { color: var(--ink-soft); border-style: dashed; }   /* no reference recorded yet */
+  .tip-bubble { position: absolute; top: calc(100% - 4px); left: 8px; right: 8px; background: #0e2a5c; border: 1px solid var(--accent); border-radius: 8px; padding: 8px 10px; font-size: 11.5px; line-height: 1.45; color: var(--ink); z-index: 40; box-shadow: 0 10px 24px rgba(0,0,0,0.45); white-space: pre-line; }
   .tip-bubble[hidden] { display: none; }
   .field .value { font-size: 14px; font-weight: 600; font-family: var(--mono); overflow-wrap: anywhere; }
   .chip { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: .4px; }
@@ -298,6 +299,9 @@
     .about-body code { font-family: var(--mono); color: var(--good); }
   </style>
 
+  <!-- Shared source references — one file drives the tooltips in all three apps -->
+  <script src="UI/sources.js"></script>
+
   <script>
   "use strict";
   (function () {
@@ -452,14 +456,27 @@
       });
       sheet.appendChild(body); return sheet;
     }
+    /* Documentation reference for a field, from the shared UI/sources.js */
+    function sourceFor(key) { try { return (window.FLEET_SOURCES && window.FLEET_SOURCES[key]) || ""; } catch (e) { return ""; } }
+    function isPending(s) { return /^source pending$/i.test(s); }
+    function tipTextFor(f) {
+      var parts = [];
+      if (f.tip) parts.push(f.tip);
+      var src = sourceFor(f.key);
+      if (src) parts.push(isPending(src) ? src : "Source: " + src);
+      return parts.join("\n\n");
+    }
+
     function buildField(a, f) {
       if (f.type === "textarea") { var w = el("div"); w.appendChild(el("div", { cls: "remarks-box", text: (a[f.key] === undefined || a[f.key] === "" || a[f.key] === null) ? "—" : String(a[f.key]) })); return w; }
       var row = el("div", { cls: "field" });
       var lab = el("div", { cls: "label" });
       lab.appendChild(el("span", { text: f.label }));
-      if (f.tip) {
-        var tb = el("button", { cls: "tip-btn", text: "i", attrs: { type: "button", "aria-label": "More information: " + f.label } });
-        var bub = el("div", { cls: "tip-bubble", text: f.tip, attrs: { hidden: "" } });
+      var tipText = tipTextFor(f);
+      if (tipText) {
+        var pend = !f.tip && isPending(sourceFor(f.key));   // nothing recorded yet: mark it quietly
+        var tb = el("button", { cls: "tip-btn" + (pend ? " pending" : ""), text: "i", attrs: { type: "button", "aria-label": "Source and notes: " + f.label } });
+        var bub = el("div", { cls: "tip-bubble", text: tipText, attrs: { hidden: "" } });
         tb.addEventListener("click", function (e) { e.stopPropagation(); var isOpen = !bub.hasAttribute("hidden"); closeTips(); if (!isOpen) { bub.removeAttribute("hidden"); openTip = bub; } });
         lab.appendChild(tb); row.appendChild(lab); row.appendChild(bub);
       } else { row.appendChild(lab); }
