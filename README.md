@@ -62,11 +62,63 @@ The design assumes the file is public and hostile eyes will see it. Protection i
   the passphrase is what actually keeps the data safe.
 
 - **Reduced attack surface.** A strict **Content Security Policy with no
-  `unsafe-inline`** (inline script and style are pinned by SHA-256 hash) blocks injected code. The app talks only to its own origin (the encrypted data file is served from the same GitHub Pages site), nothing else. Data is rendered with `textContent` only, never `innerHTML`. There are **no accounts, no analytics, and no tracking**.
+  `unsafe-inline`** (inline script and style are pinned by SHA-256 hash) blocks injected code. Data is rendered with `textContent` only, never `innerHTML`. There are **no accounts and no sign-up**.
+
+  The app makes exactly two kinds of outbound request: the encrypted data file from its own origin, and a single
+  anonymous launch ping to `nom.telemetrydeck.com` (see **Usage measurement** below). Both are pinned in `connect-src`;
+  nothing else can be contacted.
 
 **Honest limits.** There is no such thing as 100% security. One shared password means it is only as strong as the least careful holder, and there is no per user revocation, to lock one person out you change the password, re-encrypt, and everyone re-enters it. Anyone trusted with the password can still copy the data. This protects against outsiders and the public, not against an authorised user who chooses to leak. Keep `editor.html` private; it holds the signing key.
 
 ---
+
+## Usage measurement
+
+The viewer sends **one anonymous ping per launch** to
+[TelemetryDeck](https://telemetrydeck.com), a privacy-focused European analytics
+service. It exists to answer a single question — *is this app actually being
+used and worth maintaining?*
+
+**What is sent, in full:** app ID, page URL, referrer, browser locale, SDK
+version. That is the entire payload. No cookies are set, nothing is written to
+the device, and no identifier is stored anywhere. TelemetryDeck derives a
+visitor count server-side by hashing IP + app ID + user agent together with a
+salt **that changes every day**, so the same person cannot be linked from one
+day to the next — including by the maintainer.
+
+**What it deliberately is *not*:** a security control. It cannot see the attack
+that actually matters. Anyone who wants to break this data downloads
+`fleet-config.enc` once — possibly with `curl`, never opening the app — and
+attacks it offline, where no client-side analytics can ever observe them. In-flight
+launches send nothing either, because there is no connection. The real
+protections remain the passphrase strength, PBKDF2 at 600,000 iterations, the
+mandatory ECDSA signature, and the annual password rotation. For spotting
+unusual bulk downloads of the ciphertext, GitHub's own repository traffic and
+clone statistics are the better signal.
+
+**How it is wired in, and why that way:** the 681-byte SDK is **self-hosted** at
+`UI/telemetrydeck.min.js` instead of being loaded from TelemetryDeck's CDN. That
+keeps `script-src` at `'self'`, so no third-party code can ever execute in this
+page, and pins the exact bytes in this repository where they can be read in full.
+The only CSP change is one added entry in `connect-src`. Verify the vendored copy
+still matches upstream at any time:
+
+```
+curl -s https://cdn.telemetrydeck.com/websdk/telemetrydeck.min.js | shasum -a 256
+# 2633ae3f17ce21dfc782e5c3be4cca36c3f8e48bcaab77348117efab15e4181e
+```
+
+It switches itself to test mode automatically on `localhost` and `file://`, so
+local development is never counted.
+
+**Scope:** the viewer (`index.html`) only. The collector is keyless and used
+offline, and the editor is private and runs on localhost — neither is
+instrumented. This is a deliberate exception to the "keep all three apps in
+sync" rule, not an oversight.
+
+**Before launch:** tell the pilots. Measuring colleagues, however anonymously,
+needs to be disclosed rather than discovered — it is in the in-app About page,
+but a line in the announcement message is the honest way to do it.
 
 ## Admin: how to update the fleet
 
@@ -215,6 +267,31 @@ configuration while you fly it. It contains no password, no signing key and no f
   fingerprint. Dates are shown in **dd-mm-yyyy** format throughout.
 
 ## Changelog
+
+### App 1.7
+
+- **Anti-rollback protection.** The viewer records the highest data version it
+  has ever seen. A correctly signed but *older* release is now refused with a
+  loud red alert, and the pilot stays on the newer data already on screen —
+  a signed downgrade can no longer quietly put crews on superseded config.
+- **Red Message acknowledgement page.** The old six-paragraph legal wall was
+  rewritten as a short, scannable notice. Every legal point is retained; reading
+  time is roughly a third of what it was. A starfield (`UI/background.jpg`) now
+  fills the screen behind the card, which sits on it as a blurred glass panel.
+  The image was re-encoded from 2000 px / 391 KB to 1400 px / 99 KB — it is in
+  the service worker's offline precache, so its weight is paid by every pilot on
+  a hotel wifi, and at the size it is actually displayed the difference is not
+  visible.
+- **Anonymous usage measurement** via a self-hosted TelemetryDeck SDK. See
+  *Usage measurement* above for exactly what is sent and, just as importantly,
+  what it cannot do.
+- Honest-privacy text corrected throughout: the app previously claimed "no
+  analytics, no tracking", which the change above would have made untrue.
+- `theme-color` aligned to the carbon header (`#0b224d`) in all three apps.
+- `.gitignore` added to the public repo as a second line of defence against ever
+  committing the editor or plaintext fleet data.
+- Removed the unused `UI/icon.png`; softened the guess-resistance wording so it
+  no longer implies the rate limit protects against offline attack.
 
 ### App 1.6
 - **Signatures are now mandatory.** A loaded file with no signature fails closed and is refused (previously a missing signature silently skipped the check). Files must be produced by `editor.html`, which always signs, so real releases are unaffected.

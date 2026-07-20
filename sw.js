@@ -19,7 +19,7 @@
 */
 "use strict";
 
-var CACHE_VERSION = "fleet-20260720-194507";
+var CACHE_VERSION = "fleet-20260720-205055";
 
 var DATA = "fleet-config.enc";
 var SHELL = [
@@ -33,7 +33,9 @@ var SHELL = [
   "UI/icon3.png",
   "UI/icon3-180.png",
   "UI/sources.js",
-  "UI/carbon.png"
+  "UI/telemetrydeck.min.js",
+  "UI/carbon.png",
+  "UI/background.jpg"
 ];
 
 /* ---- Install: pre-cache the shell and the encrypted data ----

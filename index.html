@@ -15,7 +15,7 @@
     Encryption needs a secure context (HTTPS), e.g. GitHub Pages.
   -->
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; script-src 'self' 'sha256-XQi4qUesV+Fw2I6RBa7KBvXUQx6XGok/zO3LsWPNGwc='; style-src 'sha256-mO7jsnJmeUswL/iCFSIP/ftYWemWofDh6eE9b7FBqyQ=' 'sha256-ZeKcezLVoSYVQn5q+IcWU3Yg/yJJ+m4r+mmBiOxLcUQ='; img-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+        content="default-src 'none'; script-src 'self' 'sha256-4ae6cGDuAcg7OefVFVEBnoTXF+0Vv+nnIZL+VcCkW1g='; style-src 'sha256-Li+CgicaLQKEVEG0UwxtRTLrv+1nwzXhDEgEil2kWEU=' 'sha256-ZeKcezLVoSYVQn5q+IcWU3Yg/yJJ+m4r+mmBiOxLcUQ='; img-src 'self' data:; connect-src 'self' https://nom.telemetrydeck.com; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
   <title>A320 Fleet Configuration</title>
 
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -27,6 +27,32 @@
   <link rel="apple-touch-icon" href="UI/icon1-180.png">
   <link rel="icon" href="UI/icon1.png">
   <link rel="manifest" href="manifest.json">
+
+  <!--
+    Anonymous usage counter (TelemetryDeck). Answers one question only: is this
+    app actually being used, and roughly where from. It is NOT a security
+    control — an attacker working offline against the downloaded ciphertext is
+    invisible to it, and so is every in-flight (offline) launch.
+
+    The SDK is deliberately SELF-HOSTED rather than loaded from TelemetryDeck's
+    CDN, so that:
+      - script-src stays 'self' (no third-party code can appear in this page),
+      - the exact 681 bytes are pinned in this repo and reviewable,
+      - it keeps working offline like the rest of the app shell.
+    Verify it still matches upstream at any time:
+      curl -s https://cdn.telemetrydeck.com/websdk/telemetrydeck.min.js | shasum -a 256
+      -> 2633ae3f17ce21dfc782e5c3be4cca36c3f8e48bcaab77348117efab15e4181e
+
+    It fires exactly ONE POST on load, to nom.telemetrydeck.com, containing:
+      app ID, page URL, referrer, browser locale, SDK version.
+    No cookies, no storage, no identifiers of any kind are set on the device.
+    TelemetryDeck derives a per-day anonymous ID server-side by hashing
+    IP + app ID + user agent + a salt that changes daily, so the same person
+    cannot be followed from one day to the next. It runs in test mode
+    automatically on localhost and file:// so local work is not counted.
+  -->
+  <script src="UI/telemetrydeck.min.js"
+          data-app-id="EB9F0CD4-5B5F-46F9-9066-26995B21394B"></script>
 
   <style>
   :root {
@@ -125,6 +151,37 @@
   .gate-agree input[type="checkbox"] { width: 22px; height: 22px; margin-top: 1px; flex: 0 0 auto; accent-color: #fff; cursor: pointer; }
   .gate-actions { padding: 12px 20px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); display: flex; justify-content: flex-end; }
   .gate-actions button { min-width: 120px; padding: 11px 18px; font-size: 14px; }
+  /* ---- "Red Message" acknowledgement gate ----
+     Styled like a printed company notice rather than a wall of legal text:
+     photographic header behind a dark scrim, a red rule, and short scannable
+     lines. The starfield (UI/background.jpg) is layered over gradients, so if
+     the image is ever missing the gradients show and nothing breaks. */
+  /* The starfield carries the whole screen rather than sitting in a strip: the
+     backdrop behind the card, and again in the card header so the two connect.
+     If UI/background.jpg is ever missing, the gradients underneath show and
+     nothing breaks. */
+  #disclaimerGate.gate { background:
+      linear-gradient(rgba(3,14,34,0.62), rgba(3,14,34,0.78)), url("UI/background.jpg"), var(--blue-bg);
+    background-size: cover; background-position: center; }
+  .gate-card.red-msg { border-top: 5px solid var(--danger);
+    background: rgba(9,26,60,0.90); backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.60); animation: gate-in .38s cubic-bezier(.2,.7,.3,1) both; }
+  @keyframes gate-in { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .gate-card.red-msg { animation: none; } }
+  .red-msg .gate-head { align-items: flex-start; padding: 18px 20px; border-bottom: 1px solid rgba(255,138,144,0.42);
+    background: linear-gradient(90deg, rgba(8,20,44,0.86) 0%, rgba(8,20,44,0.66) 55%, rgba(8,20,44,0.34) 100%), url("UI/background.jpg"), linear-gradient(135deg,#143a6f,#081a3a);
+    background-size: cover; background-position: right center; }
+  .red-msg .gate-head h2 { font-size: 19px; line-height: 1.25; }
+  .gate-titlewrap { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .kicker { font-size: 10px; letter-spacing: .17em; text-transform: uppercase; font-weight: 700; color: var(--danger); }
+  .gate-body .lead { font-size: 14.5px; line-height: 1.55; }
+  .gate-body .lead strong { color: #fff; }
+  ul.redlist { list-style: none; margin: 0 0 11px; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+  ul.redlist li { position: relative; padding: 9px 12px 9px 34px; font-size: 13px; line-height: 1.55;
+    background: rgba(255,138,144,0.07); border: 1px solid rgba(255,138,144,0.24); border-radius: 9px; }
+  ul.redlist li::before { content: ""; position: absolute; left: 13px; top: 15px; width: 9px; height: 9px;
+    border-radius: 50%; background: var(--danger); box-shadow: 0 0 0 3px rgba(255,138,144,0.18); }
+  .muted-note { font-size: 11.5px !important; color: var(--ink-soft); }
   #pwInput { width: 100%; padding: 12px 12px; font-size: 16px; color: var(--ink); background: var(--blue-bg); border: 1px solid var(--line); border-radius: 10px; font-family: var(--mono); }
   #pwInput:focus { outline: none; border-color: var(--accent); }
   .pw-err { color: var(--danger) !important; font-weight: 600; }
@@ -193,19 +250,27 @@
 <body>
   <!-- Disclaimer gate -->
   <div id="disclaimerGate" class="gate" role="dialog" aria-modal="true" aria-labelledby="gateTitle" hidden>
-    <div class="gate-card">
-      <div class="gate-head"><span class="brand-mark" aria-hidden="true"></span><h2 id="gateTitle">Important — read before use</h2></div>
+    <div class="gate-card red-msg">
+      <div class="gate-head">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="gate-titlewrap">
+          <span class="kicker">Acknowledgement required</span>
+          <h2 id="gateTitle">Red Message — For you to acknowledge</h2>
+        </span>
+      </div>
       <div class="gate-body" id="gateBody">
-        <p><strong>This application is an unofficial reference and training aid only.</strong> It is not an approved, controlled, or certified source of aircraft configuration data.</p>
-        <p>The information shown here may be incomplete, out of date, or incorrect. It must never be used as the sole basis for any operational, maintenance, dispatch, or flight planning decision.</p>
-        <p><strong>Your organisation's own approved and controlled documentation always prevails.</strong> The official sources take precedence over anything shown in this tool, including but not limited to the AFM, FCOM, MEL/CDL, AMM, company Operations Manuals, and all Airbus manuals, data, drawings, and service documentation.</p>
-        <p>Where this tool and any official document disagree, the official document is correct and this tool is not. Always verify against the current controlled source before acting.</p>
-        <p>This tool is provided "as is", without warranty of any kind, whether express or implied. The authors and maintainers accept no liability for any loss, damage, injury, or consequence arising from its use or misuse. <strong>You use it entirely at your own risk.</strong></p>
-        <p>This application is not produced, endorsed, or approved by Airbus S.A.S. or by any regulatory authority. All aircraft type designations and manufacturer names are used for identification purposes only.</p>
+        <p class="lead">This is an <strong>unofficial</strong> reference and training aid. Not approved, not controlled, not certified — think of it as a well-briefed colleague, not a manual.</p>
+        <p>It may be incomplete, out of date, or simply wrong. Never make an operational, maintenance, dispatch or flight-planning decision on the strength of this app alone.</p>
+        <ul class="redlist">
+          <li><strong>Your company documentation and the Airbus manuals always win.</strong> AFM, FCOM, MEL/CDL, AMM, Operations Manuals, drawings, service documentation — the lot.</li>
+          <li>If this app and a controlled document disagree, the document is right and this app is wrong. Every time. Verify against the current controlled source before you act.</li>
+          <li>Provided "as is", no warranty of any kind, no liability accepted for any loss, damage or consequence. <strong>You use it entirely at your own risk.</strong></li>
+        </ul>
+        <p class="muted-note">Not produced, endorsed, or approved by Airbus S.A.S. or by any regulatory authority. Aircraft type designations and manufacturer names are used for identification only.</p>
         <p class="fp-line">Loaded data version: <span id="gateVer" class="mono">not loaded</span><br>Data fingerprint (SHA-256): <span id="gateFp" class="mono">not loaded</span></p>
       </div>
-      <label class="gate-agree" for="agreeCheck"><input type="checkbox" id="agreeCheck"><span>I have read and understood this notice. I accept that this tool is for reference only, that company documentation and Airbus manuals always prevail, and that I use it entirely at my own risk.</span></label>
-      <div class="gate-actions"><button id="agreeBtn" class="primary" disabled>Enter</button></div>
+      <label class="gate-agree" for="agreeCheck"><input type="checkbox" id="agreeCheck"><span>I have read this. Reference only, company and Airbus documentation prevail, and I use it at my own risk.</span></label>
+      <div class="gate-actions"><button id="agreeBtn" class="primary" disabled>Acknowledged</button></div>
     </div>
   </div>
 
@@ -285,14 +350,14 @@
 
         <h3>Version numbering</h3>
         <p>Two versions travel with the app. The <b>app version</b> is the software itself and changes only when the app is rebuilt. The <b>data version</b> is the fleet database, shown as a version number and a date, and it changes every time I publish new fleet data. You can see both in the disclaimer, along with a fingerprint of the exact data you are looking at, so two people can confirm in one glance that they are reading the same release.</p>
-        <p>App version <b><span id="aboutAppVer">1.6</span></b>. The current data version is shown in the disclaimer and footer.</p>
+        <p>App version <b><span id="aboutAppVer">1.7</span></b>. The current data version is shown in the disclaimer and footer.</p>
 
         <h3>How the encryption works</h3>
         <p>The fleet data lives in a public place, so it is encrypted before it ever leaves my hands. When I publish, the data is sealed with AES using a 256 bit key in GCM mode. The key is not stored anywhere. It is derived from a password using PBKDF2 with 600,000 iterations and a random salt, which makes guessing the password slow and expensive. What sits in the repository is only the sealed result, unreadable without the password.</p>
         <p>When you open the app, it downloads that sealed file over HTTPS and unlocks it on your own device with the password you type. The plaintext is never uploaded, never stored on any server, and is only ever held in the memory of your browser. GCM also authenticates the data, so if a single byte were altered in transit or in the repository, it simply refuses to unlock. The SHA 256 fingerprint in the disclaimer lets you confirm the release is the genuine one.</p>
 
         <h3>How secure it is: privacy and data security</h3>
-        <p>There are no accounts, no sign up, no analytics, and no tracking. The app talks to exactly one place, the encrypted data file, and to nowhere else. Everything else happens on your device. Once loaded it works fully offline. Your password is never written to the device; it is held in memory for the session only, and cleared when you tap Lock or after 15 minutes of inactivity, so you enter it again the next time you open the app fresh.</p>
+        <p>There are no accounts and no sign up. There is one small piece of measurement, and I would rather tell you about it than hide it: when the app opens <em>with</em> a connection it sends a single anonymous ping to TelemetryDeck, a privacy-focused European service. The ping says only that a launch happened, the page address, your browser's language, and where the link came from. It sets no cookie and stores nothing on your device, and the daily-changing way the service counts visitors means nobody can be followed from one day to the next — including by me. I use it to see whether the app is worth maintaining, nothing more. Airborne launches send nothing at all, because there is no connection. Everything else happens on your device. Once loaded it works fully offline. Your password is never written to the device; it is held in memory for the session only, and cleared when you tap Lock or after 15 minutes of inactivity, so you enter it again the next time you open the app fresh.</p>
         <p>Being honest matters more than sounding impressive, so here are the limits. As I always say, there is no such thing as 100% security. Everyone shares one fleet password, which means it is only as strong as the least careful person who holds it, and there is no way to revoke one person without changing the password for all. Anyone you trust with the password can read the data, and could copy it. Protection is against outsiders and the public, not against an authorised user who chooses to leak. Choose a strong passphrase, share it out of band, and change it if you have any doubt.</p>
 
         <h3>The one rule that always wins</h3>
@@ -350,7 +415,7 @@
   (function () {
     /* ===== Encrypted update source (public repo holds ciphertext only) ===== */
     var CONFIG_URL = "fleet-config.enc";   // same-origin (served by GitHub Pages) so the service worker can cache it for offline use
-    var APP_VERSION = "1.6";
+    var APP_VERSION = "1.7";
     var CACHE_KEY  = "a320config.enc.cache";     // { text, syncedAt }
     var PW_KEY     = "a320config.pw";            // lightly obfuscated password (device convenience only)
     var DISCLAIMER_VERSION = "2026-07-13", DISCLAIMER_KEY = "a320config.disclaimerAccepted";
