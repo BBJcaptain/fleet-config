@@ -1,6 +1,6 @@
 # Backstop against ever committing private material to this public repo.
 #
-# publish.command only copies the github/ folder, so the private files below
+# publish-to-github-repo.command only copies the github/ folder, so the private files below
 # normally cannot reach here at all. This file is the second line of defence
 # for the case where someone runs `git add` by hand in the clone.
 
@@ -14,7 +14,7 @@ fleet-config.csv
 *.plaintext.json
 
 # Owner tooling and notes
-publish.command
+publish-to-github-repo.command
 PUBLISHING.md
 HANDOVER.md
 launchers/

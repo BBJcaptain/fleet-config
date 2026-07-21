@@ -11,7 +11,7 @@
    • Change the text after a field name. Keep the quotes and the trailing comma.
    • Leave "Source Pending" wherever you have not confirmed the reference yet —
      that is shown to pilots as-is, so the gap is visible and honest.
-   • Save this file, then double-click publish.command.
+   • Save this file, then double-click publish-to-github-repo.command.
 
    Format:  field_key: "FCOM / Chapter / Section / Sub-section",
 
