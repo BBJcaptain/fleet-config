@@ -127,6 +127,20 @@
     .savedtag { font-size: 11.5px; color: var(--good); align-self: center; }
     code { font-family: var(--mono); color: var(--accent); }
     input[type="file"] { display: none; }
+
+    /* ---- "New version ready" strip (mirrors the viewer) ----
+       Calm, never automatic. Reloading is safe here because the draft is
+       autosaved on every change and restored on load, but we say so plainly:
+       a pilot mid-collection should not have to take that on trust. */
+    .newverbar { display: flex; align-items: center; gap: 10px; padding: 9px 16px;
+      background: rgba(108,172,228,0.13); border-bottom: 1px solid rgba(108,172,228,0.42);
+      color: var(--ink); font-size: 12px; line-height: 1.45; }
+    .newverbar[hidden] { display: none; }
+    .nvdot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); flex: 0 0 auto; }
+    .newverbar .nvtext { flex: 1 1 auto; min-width: 0; }
+    .newverbar button { flex: 0 0 auto; padding: 6px 12px; font-size: 12px; font-weight: 700;
+      background: #fff; border-color: #fff; color: var(--blue-bg); }
+    .newverbar .nvlater { background: transparent; border: 1px solid var(--line); color: var(--ink-soft); font-weight: 400; }
   </style>
 </head>
 <body>
@@ -138,6 +152,14 @@
     </div>
     <span class="role">Offline · Keyless</span>
   </header>
+
+  <div class="newverbar" id="newVerBar" hidden role="status">
+    <span class="nvdot" aria-hidden="true"></span>
+    <span class="nvtext">A new version of this page is ready. Your collected draft is saved and will be restored.</span>
+    <button id="newVerReload" type="button">Reload</button>
+    <button id="newVerLater" class="nvlater" type="button">Later</button>
+  </div>
+
   <div class="sub">Jot down an aircraft's configuration offline, then <b>Download collected .json</b> and merge it into the fleet later with the editor.</div>
 
   <div class="safe">
@@ -467,9 +489,33 @@
       window.addEventListener("pagehide", function () { if (fleet.length) saveDraft(); });   // iOS suspend / navigation away
       document.addEventListener("visibilitychange", function () { if (document.hidden && fleet.length) saveDraft(); });
 
-      /* Offline capability: pre-caches this page so it opens with no connection (in flight). */
+      /* Offline capability: pre-caches this page so it opens with no connection (in flight).
+         Update handling mirrors the viewer: tell the user, never reload on our own.
+         Here the stakes are higher — someone may be mid-collection — so the draft
+         is written again explicitly before any reload we trigger. */
       if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.register("sw.js").catch(function () { /* unsupported or blocked: drafts still autosave locally */ });
+        var nvBar = document.getElementById("newVerBar");
+        if (nvBar) {
+          document.getElementById("newVerReload").addEventListener("click", function () {
+            if (fleet.length) saveDraft();
+            window.location.reload();
+          });
+          document.getElementById("newVerLater").addEventListener("click", function () { nvBar.hidden = true; });
+          var hadCtrl = !!navigator.serviceWorker.controller;
+          navigator.serviceWorker.addEventListener("controllerchange", function () {
+            if (hadCtrl && nvBar.hidden) nvBar.hidden = false;
+          });
+        }
+        navigator.serviceWorker.register("sw.js").then(function (reg) {
+          if (!reg || !nvBar) return;
+          reg.addEventListener("updatefound", function () {
+            var sw = reg.installing;
+            if (!sw) return;
+            sw.addEventListener("statechange", function () {
+              if (sw.state === "installed" && navigator.serviceWorker.controller && nvBar.hidden) nvBar.hidden = false;
+            });
+          });
+        }).catch(function () { /* unsupported or blocked: drafts still autosave locally */ });
       }
 
       /* Restore anything collected in a previous session (survives reload / app close) */

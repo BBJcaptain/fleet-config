@@ -15,7 +15,7 @@
     Encryption needs a secure context (HTTPS), e.g. GitHub Pages.
   -->
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; script-src 'self' 'sha256-txFXNt6P8c0Ik4oQ1VqL3fA8XOaZh/stiXi9NF5ZEhQ='; style-src 'sha256-aJmkNVzy7FzciSDtGcC1HYDfluMm2AuOm/clP+ejctE=' 'sha256-ZeKcezLVoSYVQn5q+IcWU3Yg/yJJ+m4r+mmBiOxLcUQ='; img-src 'self' data:; connect-src 'self' https://nom.telemetrydeck.com; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+        content="default-src 'none'; script-src 'self' 'sha256-ok9aIWH00WtTs/nVhMiQVa6Ko9TYGn2qGE9vuL3/VR4='; style-src 'sha256-P1uwdQAuLbyZVROCnuglaO4ulvjsH2YDdatspPezleE=' 'sha256-ZeKcezLVoSYVQn5q+IcWU3Yg/yJJ+m4r+mmBiOxLcUQ='; img-src 'self' data:; connect-src 'self' https://nom.telemetrydeck.com; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
   <title>A320 Fleet Configuration</title>
 
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -193,6 +193,24 @@
   .rollbackbar[hidden] { display: none; }
   .rbdot { width: 9px; height: 9px; border-radius: 50%; background: var(--danger); flex: 0 0 auto; margin-top: 4px; }
 
+  /* ---- "New version ready" strip ----
+     Deliberately calm, not an alert: nothing is wrong and nothing is urgent.
+     The new version is already downloaded and will apply on the next launch
+     anyway; this simply lets the pilot take it now. Never auto-reloads — that
+     could pull the page out from under someone mid-lookup. */
+  .newverbar { display: flex; align-items: center; gap: 10px; padding: 9px 16px;
+    padding-left: calc(16px + env(safe-area-inset-left)); padding-right: calc(16px + env(safe-area-inset-right));
+    background: rgba(108,172,228,0.13); border-bottom: 1px solid rgba(108,172,228,0.42);
+    color: var(--ink); font-size: 12px; line-height: 1.45; }
+  .newverbar[hidden] { display: none; }
+  .nvdot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); flex: 0 0 auto;
+    animation: pulse 1.6s infinite; }
+  @media (prefers-reduced-motion: reduce) { .nvdot { animation: none; } }
+  .newverbar .nvtext { flex: 1 1 auto; min-width: 0; }
+  .newverbar button { flex: 0 0 auto; padding: 6px 12px; font-size: 12px; font-weight: 700;
+    background: #fff; border-color: #fff; color: var(--blue-bg); }
+  .newverbar .nvlater { background: transparent; border: 1px solid var(--line); color: var(--ink-soft); font-weight: 400; }
+
   /* ---- Tier 3: ⌘K palette + restrained motion ---- */
   .cmdk { position: fixed; inset: 0; z-index: 900; background: rgba(3,20,45,0.72);
     display: flex; align-items: flex-start; justify-content: center; padding: 12vh 16px 16px; }
@@ -311,6 +329,13 @@
   <div class="rollbackbar" id="rollbackBar" hidden role="alert">
     <span class="rbdot" aria-hidden="true"></span>
     <span id="rollbackText"></span>
+  </div>
+
+  <div class="newverbar" id="newVerBar" hidden role="status">
+    <span class="nvdot" aria-hidden="true"></span>
+    <span class="nvtext">A new version of the app is ready. Your fleet data is unaffected.</span>
+    <button id="newVerReload" type="button">Reload</button>
+    <button id="newVerLater" class="nvlater" type="button">Later</button>
   </div>
 
   <div class="hero" aria-hidden="true"></div>
@@ -853,6 +878,57 @@
     function openAbout() { byId("aboutAppVer").textContent = APP_VERSION; byId("aboutBody").scrollTop = 0; byId("aboutGate").hidden = false; }
     function closeAbout() { byId("aboutGate").hidden = true; }
 
+    /* ---- "New version ready" prompt --------------------------------------
+       The service worker installs a new app shell in the background. The page
+       already on screen keeps running the old one until it is reloaded, so we
+       tell the pilot and let them choose the moment. Deliberately never
+       automatic: a reload mid-lookup would be worse than a slightly old build.
+       The fleet DATA is fetched network-first and is never affected by this. */
+    var swReg = null, lastUpdateCheck = 0;
+
+    function showNewVersion() {
+      var b = byId("newVerBar");
+      if (b && b.hidden) b.hidden = false;
+    }
+
+    function setupUpdatePrompt() {
+      var b = byId("newVerBar");
+      if (!b) return;
+      byId("newVerReload").addEventListener("click", function () { window.location.reload(); });
+      byId("newVerLater").addEventListener("click", function () { b.hidden = true; });
+
+      /* A change of controller means a newer shell has taken over. Ignore the
+         very first install (no previous controller) — that is not an update. */
+      var hadController = !!navigator.serviceWorker.controller;
+      navigator.serviceWorker.addEventListener("controllerchange", function () {
+        if (hadController) showNewVersion();
+      });
+    }
+
+    function watchRegistration(reg) {
+      if (!reg) return;
+      swReg = reg;
+      reg.addEventListener("updatefound", function () {
+        var sw = reg.installing;
+        if (!sw) return;
+        sw.addEventListener("statechange", function () {
+          /* "installed" while a controller already exists == an update is ready */
+          if (sw.state === "installed" && navigator.serviceWorker.controller) showNewVersion();
+        });
+      });
+    }
+
+    /* A Home Screen app can stay open for days, and the browser only checks for
+       a new worker on navigation. Re-check when the app is brought forward, at
+       most every 30 minutes. Fails silently with no connection, as it should. */
+    function maybeCheckForUpdate() {
+      if (!swReg) return;
+      var now = Date.now();
+      if (now - lastUpdateCheck < 1800000) return;
+      lastUpdateCheck = now;
+      try { swReg.update(); } catch (e) { /* offline or unsupported */ }
+    }
+
     function init() {
       clearStoredPw();   // session-only: purge any password persisted by an earlier version
       byId("jump").addEventListener("change", function (e) { go(Number(e.target.value)); });
@@ -882,13 +958,21 @@
       byId("cmdk").addEventListener("click", function (e) { if (e.target === byId("cmdk")) cmdkClose(); });
       document.addEventListener("click", closeTips);
       ["click", "keydown", "touchstart", "mousemove"].forEach(function (ev) { document.addEventListener(ev, function () { if (byId("pwGate").hidden) resetLockTimer(); }, { passive: true }); });
-      document.addEventListener("visibilitychange", function () { if (document.hidden) return; if (!byId("pwGate").hidden) return; if (lastActivity && (Date.now() - lastActivity) > AUTO_LOCK_MS) { doLock("Locked after inactivity. Enter the password to continue."); return; } resetLockTimer(); refreshIfUnlocked(); });
+      document.addEventListener("visibilitychange", function () { if (document.hidden) return; if (!byId("pwGate").hidden) return; if (lastActivity && (Date.now() - lastActivity) > AUTO_LOCK_MS) { doLock("Locked after inactivity. Enter the password to continue."); return; } resetLockTimer(); refreshIfUnlocked(); maybeCheckForUpdate(); });
       window.addEventListener("pageshow", function (e) { if (e.persisted) refreshIfUnlocked(); });   // bfcache restore (iOS) often skips visibilitychange
 
       /* Offline capability: the service worker pre-caches the app and the encrypted
-         data so the Home Screen icon opens reliably with no connection (in flight). */
+         data so the Home Screen icon opens reliably with no connection (in flight).
+
+         Update handling: the app shell is served cache-first, which is what makes
+         it open instantly and reliably with no signal. The cost is that a freshly
+         published version is downloaded in the background but only becomes visible
+         on a later launch. Rather than leave the pilot on an old build with no way
+         to know, we surface a calm strip offering a reload. We never reload on our
+         own — that could yank the page away mid-lookup. */
       if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.register("sw.js").catch(function () { /* unsupported or blocked: app still runs from the local cache */ });
+        setupUpdatePrompt();
+        navigator.serviceWorker.register("sw.js").then(watchRegistration).catch(function () { /* unsupported or blocked: app still runs from the local cache */ });
       }
 
       render();

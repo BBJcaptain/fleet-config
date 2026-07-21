@@ -213,6 +213,14 @@ configuration while you fly it. It contains no password, no signing key and no f
   asked to acknowledge again. Whenever the disclaimer text is edited, bump
   `DISCLAIMER_VERSION` in `index.html` — otherwise existing users silently keep
   their old acceptance and never see the new text.
+- **"New version ready" prompt.** The app shell is cached so it opens instantly
+  with no signal, which means a newly published version only appears on a later
+  launch. The app now shows a calm strip — *"A new version of the app is ready.
+  Your fleet data is unaffected."* — with **Reload** and **Later**. It never
+  reloads by itself; a reload mid-lookup would be worse than a slightly old
+  build. The collector has the same strip and saves your draft before reloading.
+  Fleet data is unaffected either way: it is fetched network-first and is always
+  current when you have a connection.
 - **Anonymous usage measurement** via a self-hosted TelemetryDeck SDK. See
   *Usage measurement* above for exactly what is sent and, just as importantly,
   what it cannot do.
