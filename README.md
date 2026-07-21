@@ -208,6 +208,11 @@ configuration while you fly it. It contains no password, no signing key and no f
   the service worker's offline precache, so its weight is paid by every pilot on
   a hotel wifi, and at the size it is actually displayed the difference is not
   visible.
+- **Acknowledgement version bumped** alongside the rewritten notice. The gate is
+  shown once per notice version; because the wording changed, every device is
+  asked to acknowledge again. Whenever the disclaimer text is edited, bump
+  `DISCLAIMER_VERSION` in `index.html` — otherwise existing users silently keep
+  their old acceptance and never see the new text.
 - **Anonymous usage measurement** via a self-hosted TelemetryDeck SDK. See
   *Usage measurement* above for exactly what is sent and, just as importantly,
   what it cannot do.
