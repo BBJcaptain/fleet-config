@@ -19,7 +19,7 @@
 */
 "use strict";
 
-var CACHE_VERSION = "fleet-20260721-110728";
+var CACHE_VERSION = "fleet-20260721-110922";
 
 var DATA = "fleet-config.enc";
 var SHELL = [
@@ -39,12 +39,25 @@ var SHELL = [
 ];
 
 /* ---- Install: pre-cache the shell and the encrypted data ----
-   Added one by one so a single missing file cannot abort the whole install. */
+   Added one by one so a single missing file cannot abort the whole install.
+
+   `cache: "reload"` is essential, not decorative. A plain cache.add() is allowed
+   to satisfy itself from the browser's ordinary HTTP cache, and GitHub Pages
+   serves these files with max-age=600. Without this flag a device that loaded
+   the app in the last ten minutes will build a BRAND NEW cache out of the OLD
+   files — the version number changes, the content does not, and the "new version
+   ready" prompt then hands the user the same build they already had. Forcing a
+   revalidated fetch here is what makes an update actually be an update. */
 self.addEventListener("install", function (event) {
   event.waitUntil(
     caches.open(CACHE_VERSION).then(function (cache) {
       return Promise.all(SHELL.concat([DATA]).map(function (url) {
-        return cache.add(url).catch(function () { /* keep going */ });
+        var fresh;
+        try { fresh = new Request(url, { cache: "reload" }); }
+        catch (e) { fresh = url; }          /* very old browsers: fall back */
+        return cache.add(fresh).catch(function () {
+          return cache.add(url).catch(function () { /* keep going */ });
+        });
       }));
     }).then(function () { return self.skipWaiting(); })
   );
