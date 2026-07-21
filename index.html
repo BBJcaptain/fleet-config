@@ -15,7 +15,7 @@
     Encryption needs a secure context (HTTPS), e.g. GitHub Pages.
   -->
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; script-src 'self' 'sha256-ok9aIWH00WtTs/nVhMiQVa6Ko9TYGn2qGE9vuL3/VR4='; style-src 'sha256-P1uwdQAuLbyZVROCnuglaO4ulvjsH2YDdatspPezleE=' 'sha256-ZeKcezLVoSYVQn5q+IcWU3Yg/yJJ+m4r+mmBiOxLcUQ='; img-src 'self' data:; connect-src 'self' https://nom.telemetrydeck.com; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+        content="default-src 'none'; script-src 'self' 'sha256-Pz5i/EttPZQ4UmiQ53vBPOHaMt7B7F+ioBagd/Rgiow='; style-src 'sha256-iR1daeMrFmMTfnqkBZZh+WrdhzV+EEdHjbxYv16f+Ag=' 'sha256-ZeKcezLVoSYVQn5q+IcWU3Yg/yJJ+m4r+mmBiOxLcUQ='; img-src 'self' data:; connect-src 'self' https://nom.telemetrydeck.com; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
   <title>A320 Fleet Configuration</title>
 
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -72,6 +72,22 @@
   .brand-mark::after { content: none; }
   .hdr-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
   .secbadge { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; letter-spacing: .4px; color: var(--ink-soft); text-transform: uppercase; }
+
+  /* Header "Updated" chip: when this device last pulled the fleet data from
+     GitHub. Turns amber once that is over a fortnight old, so a long-stale
+     offline copy is visible at a glance rather than only in the footer text. */
+  .updchip { display: inline-flex; align-items: baseline; gap: 5px; font-size: 10.5px; letter-spacing: .3px;
+    color: var(--ink-soft); text-transform: uppercase; white-space: nowrap; }
+  .updchip[hidden] { display: none; }
+  .updchip .uv { font-family: var(--mono); font-size: 11px; letter-spacing: 0; color: var(--ink); text-transform: none; }
+  .updchip.stale .uv { color: var(--amber); }
+  .updchip.stale::after { content: "⚠"; color: var(--amber); font-size: 11px; }
+  @media (max-width: 480px) { .updchip .ulabel { display: none; } }
+
+  /* App version in the footer. Deliberately distinct from the DATA version:
+     this one is the software, and changes only when the app itself is rebuilt. */
+  .appver { font-family: var(--mono); font-size: 10px; color: var(--ink-soft); border: 1px solid var(--line);
+    border-radius: 6px; padding: 2px 6px; margin-right: 10px; white-space: nowrap; flex: 0 0 auto; }
   .secbadge svg { width: 15px; height: 15px; color: var(--good); }
   .brand-text { display: flex; flex-direction: column; line-height: 1.15; }
   .brand-title { font-size: 14px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; }
@@ -315,6 +331,9 @@
       <span class="pos" id="pos"></span>
     </div>
     <div class="hdr-right">
+      <span class="updchip" id="hdrUpdated" hidden title="When this device last downloaded the fleet data from GitHub.">
+        <span class="ulabel">Updated</span><span class="uv" id="hdrUpdatedVal">—</span>
+      </span>
       <span class="secbadge" title="Hardened end-to-end encryption. The data is AES-256-GCM encrypted, the key is derived with PBKDF2 (600,000 iterations), the data is signed (ECDSA P-256) and verified on load, and the app runs under a strict Content Security Policy.">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.4-3 8.4-7 9-4-.6-7-4.6-7-9V6l7-3z"></path><path d="M9 12l2 2 4-4"></path></svg>
         <span class="secbadge-txt">Encrypted</span>
@@ -343,7 +362,7 @@
   <main id="stage"></main>
 
   <footer class="footnote">
-    <div class="foot-status"><span class="msg" id="updateMsg">Starting…</span></div>
+    <div class="foot-status"><span class="appver" id="footAppVer" title="Version of this app (the software, not the fleet data)">App —</span><span class="msg" id="updateMsg">Starting…</span></div>
     <div class="foot-links">
       <button id="btnAbout" class="footbtn" type="button">About</button>
       <button id="btnVerify" class="footbtn" type="button">Verify</button>
@@ -375,7 +394,7 @@
 
         <h3>Version numbering</h3>
         <p>Two versions travel with the app. The <b>app version</b> is the software itself and changes only when the app is rebuilt. The <b>data version</b> is the fleet database, shown as a version number and a date, and it changes every time I publish new fleet data. You can see both in the disclaimer, along with a fingerprint of the exact data you are looking at, so two people can confirm in one glance that they are reading the same release.</p>
-        <p>App version <b><span id="aboutAppVer">1.7</span></b>. The current data version is shown in the disclaimer and footer.</p>
+        <p>App version <b><span id="aboutAppVer">1.0</span></b>. The current data version is shown in the disclaimer and footer.</p>
 
         <h3>How the encryption works</h3>
         <p>The fleet data lives in a public place, so it is encrypted before it ever leaves my hands. When I publish, the data is sealed with AES using a 256 bit key in GCM mode. The key is not stored anywhere. It is derived from a password using PBKDF2 with 600,000 iterations and a random salt, which makes guessing the password slow and expensive. What sits in the repository is only the sealed result, unreadable without the password.</p>
@@ -440,7 +459,7 @@
   (function () {
     /* ===== Encrypted update source (public repo holds ciphertext only) ===== */
     var CONFIG_URL = "fleet-config.enc";   // same-origin (served by GitHub Pages) so the service worker can cache it for offline use
-    var APP_VERSION = "1.7";
+    var APP_VERSION = "1.0";
     var CACHE_KEY  = "a320config.enc.cache";     // { text, syncedAt }
     var PW_KEY     = "a320config.pw";            // lightly obfuscated password (device convenience only)
     var DISCLAIMER_VERSION = "2026-07-21", DISCLAIMER_KEY = "a320config.disclaimerAccepted";
@@ -673,9 +692,36 @@
     function render() { renderChrome(); renderStage(); }
     function closeTips() { if (openTip) { openTip.setAttribute("hidden", ""); openTip = null; } }
 
+    /* ---- Header "Updated" chip ----
+       Shows when THIS DEVICE last downloaded the fleet data from GitHub — not
+       the date the maintainer edited it (that is the data version, in the
+       footer and the disclaimer). The two answer different questions:
+       "am I holding a current copy?" vs "how old is the information itself?" */
+    function dmyFromDate(d) {
+      if (!d) return null;
+      var p = function (n) { return (n < 10 ? "0" : "") + n; };
+      return p(d.getDate()) + "-" + p(d.getMonth() + 1) + "-" + d.getFullYear();
+    }
+
+    function updateHeaderDate() {
+      var chip = byId("hdrUpdated"), val = byId("hdrUpdatedVal");
+      if (!chip || !val) return;
+      if (!lastSync) { chip.hidden = true; return; }
+      var txt = dmyFromDate(lastSync);
+      var days = (Date.now() - lastSync.getTime()) / 86400000;
+      var stale = days > 14;
+      val.textContent = txt;
+      chip.className = "updchip" + (stale ? " stale" : "");
+      chip.title = stale
+        ? ("Fleet data last downloaded from GitHub on " + txt + " — over two weeks ago. Open the app with a connection to refresh.")
+        : ("Fleet data last downloaded from GitHub on " + txt + ".");
+      chip.hidden = false;
+    }
+
     /* ---- Status bar ---- */
     function setStatus(state) {
       var bar = byId("statusDot"), msg = byId("updateMsg");
+      updateHeaderDate();
       bar.className = "statusdot state-" + state; clear(msg);
       var dataDate = fmtDMY(data && data.meta.updated ? data.meta.updated : null);
       var ver = (data && data.meta.version) ? data.meta.version : "—";
@@ -935,6 +981,7 @@
       byId("btnVerify").addEventListener("click", function () { var pw = getPw(); if (pw) { setStatus("checking"); unlock(pw, false); } else openPwGate(); });
       byId("btnLock").addEventListener("click", function () { clearPw(); toast("Locked. Enter the password to unlock."); openPwGate(); });
       byId("btnDisclaimer").addEventListener("click", function () { openDisclaimer(); });
+      byId("footAppVer").textContent = "App " + APP_VERSION;
       byId("btnAbout").addEventListener("click", openAbout);
       byId("aboutClose").addEventListener("click", closeAbout);
       var c = byId("agreeCheck"), b = byId("agreeBtn");

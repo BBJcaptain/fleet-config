@@ -194,7 +194,26 @@ configuration while you fly it. It contains no password, no signing key and no f
 
 ## Changelog
 
-### App 1.7
+Versions were reset to **1.0** on 21-07-2026 when the three apps were first
+versioned independently. Each app carries its own number: **+0.1** for an
+ordinary update, **+1.0** for a major one.
+
+### All apps 1.0 — 21-07-2026
+
+- Each app now shows its own version in the footer: viewer, collector and editor
+  are versioned separately, because they are released independently.
+- **"Updated" moved from the footer to the header.** In the viewer it is the date
+  this device last downloaded the fleet data from GitHub, and it turns amber with
+  a ⚠ once that is more than a fortnight old, so a long-stale offline copy is
+  obvious at a glance. The label collapses to just the date on phones so the
+  sticky header stays one line.
+- The **data version and its own date remain in the footer and the disclaimer**.
+  They answer a different question and are deliberately not merged: the header
+  says *"am I holding a current copy?"*, the footer says *"how old is the
+  information itself?"* A copy downloaded today can still contain data last
+  edited months ago.
+
+### Earlier (pre-reset, viewer only) — 1.7
 
 - **Anti-rollback protection.** The viewer records the highest data version it
   has ever seen. A correctly signed but *older* release is now refused with a
