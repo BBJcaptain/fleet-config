@@ -25,8 +25,8 @@ window.FLEET_SOURCES = {
   registration:            "Centrik/Operations/Aircraft/Aircraft Documents/Certificate of Airworthiness",
   model:                   "Centrik/Operations/Aircraft/Aircraft Documents/Certificate of Airworthiness",
   msn:                     "Centrik/Operations/Aircraft/Aircraft Documents/Certificate of Airworthiness",
-  first_flight:            "Source Pending",
-  first_owner:             "Source Pending",
+  first_flight:            "https://www.airfleets.net/home/",
+  first_owner:             "https://www.airfleets.net/home/",
 
   /* ---- Performance ---- */
   mlw_t:                   "NAVBLUE EFB/Aircraft/Weight Variant",

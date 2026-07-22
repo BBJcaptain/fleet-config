@@ -200,33 +200,21 @@ ordinary update, **+1.0** for a major one.
 
 ### All apps 1.0 — 21-07-2026
 
-- **Night-flight legibility.** Field labels and the PERFORMANCE / EQUIPMENT /
-  REMARKS headings were sized for a lit cabin and read as grey mush on a dark
-  flight deck. Labels are larger and closer to white, headings are noticeably
-  bigger, and the Remarks text is up a point. The iPad breakpoint used to *shrink*
-  labels to 10.5 px to squeeze a card onto one screen — that was the flight-deck
-  case and the worst offender, so it is raised too. The card was already a little
-  taller than an iPad screen before this change; it now scrolls about 34 px more.
-- Background image re-encoded again: 99 KB → **36 KB**, no visible difference
-  behind the scrim. It is in the offline precache, so this is a one-time
-  download every pilot pays on whatever connection they have.
-- **The starfield is now the backdrop of all three apps**, not just the
-  acknowledgement page. It is drawn as a fixed layer behind the content with a
-  scrim over it, so it never touches the legibility of a value: aircraft cards
-  are opaque and the image only shows in the margins. It falls back to the old
-  gradient if the image is ever missing, and is suppressed when printing.
-- Each app now shows its own version in the footer: viewer, collector and editor
-  are versioned separately, because they are released independently.
+- **Easier to read at night.** Field labels and the PERFORMANCE / EQUIPMENT /
+  REMARKS headings are larger and brighter, so the app is legible on a dark
+  flight deck without turning the screen up.
+- **The starfield now sits behind the whole app**, not just the acknowledgement
+  page. It never touches the legibility of a value: aircraft cards are opaque and
+  the image only shows around them. It is suppressed when printing.
+- Each app shows its own version in the footer. The viewer, collector and editor
+  are versioned separately because they are released independently.
 - **"Updated" moved from the footer to the header.** In the viewer it is the date
-  this device last downloaded the fleet data from GitHub, and it turns amber with
-  a ⚠ once that is more than a fortnight old, so a long-stale offline copy is
-  obvious at a glance. The label collapses to just the date on phones so the
-  sticky header stays one line.
-- The **data version and its own date remain in the footer and the disclaimer**.
-  They answer a different question and are deliberately not merged: the header
-  says *"am I holding a current copy?"*, the footer says *"how old is the
-  information itself?"* A copy downloaded today can still contain data last
-  edited months ago.
+  this device last downloaded the fleet data, and it turns amber with a ⚠ once
+  that is more than a fortnight old, so a stale offline copy is obvious.
+- The **data version and its own date stay in the footer and the disclaimer**.
+  They answer a different question: the header says *"am I holding a current
+  copy?"*, the footer says *"how old is the information itself?"* A copy
+  downloaded today can still contain data last edited months ago.
 
 ### Earlier (pre-reset, viewer only) — 1.7
 
