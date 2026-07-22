@@ -13,6 +13,9 @@ fleet-config.json
 fleet-config.csv
 *.plaintext.json
 
+# Un-optimised image masters (kept privately at the project root)
+image-originals-backup/
+
 # Owner tooling and notes
 publish-to-github-repo.command
 PUBLISHING.md
