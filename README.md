@@ -224,17 +224,11 @@ ordinary update, **+1.0** for a major one.
   a signed downgrade can no longer quietly put crews on superseded config.
 - **Red Message acknowledgement page.** The old six-paragraph legal wall was
   rewritten as a short, scannable notice. Every legal point is retained; reading
-  time is roughly a third of what it was. A starfield (`UI/background.jpg`) now
-  fills the screen behind the card, which sits on it as a blurred glass panel.
-  The image was re-encoded from 2000 px / 391 KB to 1400 px / 99 KB — it is in
-  the service worker's offline precache, so its weight is paid by every pilot on
-  a hotel wifi, and at the size it is actually displayed the difference is not
-  visible.
+  time is roughly a third of what it was. A starfield now fills the screen behind
+  the card, which sits on it as a blurred glass panel.
 - **Acknowledgement version bumped** alongside the rewritten notice. The gate is
   shown once per notice version; because the wording changed, every device is
-  asked to acknowledge again. Whenever the disclaimer text is edited, bump
-  `DISCLAIMER_VERSION` in `index.html` — otherwise existing users silently keep
-  their old acceptance and never see the new text.
+  asked to acknowledge again.
 - **"New version ready" prompt.** The app shell is cached so it opens instantly
   with no signal, which means a newly published version only appears on a later
   launch. The app now shows a calm strip — *"A new version of the app is ready.
