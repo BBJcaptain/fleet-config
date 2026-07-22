@@ -200,6 +200,11 @@ ordinary update, **+1.0** for a major one.
 
 ### All apps 1.0 — 21-07-2026
 
+- **The starfield is now the backdrop of all three apps**, not just the
+  acknowledgement page. It is drawn as a fixed layer behind the content with a
+  scrim over it, so it never touches the legibility of a value: aircraft cards
+  are opaque and the image only shows in the margins. It falls back to the old
+  gradient if the image is ever missing, and is suppressed when printing.
 - Each app now shows its own version in the footer: viewer, collector and editor
   are versioned separately, because they are released independently.
 - **"Updated" moved from the footer to the header.** In the viewer it is the date

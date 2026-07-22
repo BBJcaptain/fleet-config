@@ -15,7 +15,7 @@
     Encryption needs a secure context (HTTPS), e.g. GitHub Pages.
   -->
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; script-src 'self' 'sha256-Pz5i/EttPZQ4UmiQ53vBPOHaMt7B7F+ioBagd/Rgiow='; style-src 'sha256-iR1daeMrFmMTfnqkBZZh+WrdhzV+EEdHjbxYv16f+Ag=' 'sha256-ZeKcezLVoSYVQn5q+IcWU3Yg/yJJ+m4r+mmBiOxLcUQ='; img-src 'self' data:; connect-src 'self' https://nom.telemetrydeck.com; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+        content="default-src 'none'; script-src 'self' 'sha256-Pz5i/EttPZQ4UmiQ53vBPOHaMt7B7F+ioBagd/Rgiow='; style-src 'sha256-sZbkdOtJsOa+oE0hd8mQsZ7dZbJduHRIegowtn4quxs=' 'sha256-ZeKcezLVoSYVQn5q+IcWU3Yg/yJJ+m4r+mmBiOxLcUQ='; img-src 'self' data:; connect-src 'self' https://nom.telemetrydeck.com; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
   <title>A320 Fleet Configuration</title>
 
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -55,6 +55,27 @@
           data-app-id="EB9F0CD4-5B5F-46F9-9066-26995B21394B"></script>
 
   <style>
+  /* ---- Starfield behind the whole app ----
+     Drawn as a FIXED pseudo-element rather than `background-attachment: fixed`,
+     which iOS Safari does not honour reliably — on iPhone/iPad that property
+     either jumps while scrolling or is ignored outright. The scrim over it is
+     what keeps every value legible: the standing rule is that nothing may cost
+     clarity, so the image is atmosphere, never contrast. The last layer is a
+     plain gradient, so if the image ever fails to load the app still looks
+     right instead of falling back to bare colour. */
+  html { background: #06122a; }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      linear-gradient(180deg, rgba(11,34,77,0.70) 0%, rgba(8,26,58,0.58) 45%, rgba(6,18,42,0.80) 100%),
+      url("UI/background.jpg") center center / cover no-repeat,
+      linear-gradient(180deg, #0b224d 0%, #081a3a 45%, #06122a 100%);
+  }
+
   :root {
     --blue-bg:#081a3a; --blue-deep:#0a1f45; --blue-bar:#0b224d;
     --panel:rgba(255,255,255,0.06); --panel-2:rgba(255,255,255,0.12); --line:rgba(255,255,255,0.16);
@@ -64,7 +85,7 @@
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; margin: 0; }
-  body { font-family: var(--sans); color: var(--ink); background: linear-gradient(180deg, #0b224d 0%, #081a3a 45%, #06122a 100%) fixed; display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+  body { font-family: var(--sans); color: var(--ink); background: transparent; display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
 
   .app-bar { display: flex; align-items: center; gap: 10px 16px; flex-wrap: wrap; padding: 10px 16px; padding-top: calc(10px + env(safe-area-inset-top)); padding-left: calc(16px + env(safe-area-inset-left)); padding-right: calc(16px + env(safe-area-inset-right)); background: linear-gradient(rgba(11,34,77,0.84), rgba(9,26,60,0.92)), url("UI/carbon.png"); background-size: cover; background-position: center; border-bottom: 1px solid rgba(108,172,228,0.40); position: sticky; top: 0; z-index: 50; }
   .brand { display: flex; align-items: center; gap: 10px; }
@@ -252,6 +273,7 @@
   @page { size: A4 portrait; margin: 12mm; }
   @media print {
     body { background: #fff; color: #000; }
+    body::before { display: none; }   /* never waste ink on the starfield */
     .app-bar, .updatebar, .footnote, #toast, .gate, .hero { display: none !important; }
     main#stage { display: block; padding: 0; }
     .sheet { width: 100%; box-shadow: none; border: 1px solid #999; border-radius: 0; background: #fff; color: #000; page-break-after: always; break-after: page; }
