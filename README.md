@@ -200,6 +200,10 @@ ordinary update, **+1.0** for a major one.
 
 ### All apps 1.0 — 21-07-2026
 
+- **The viewer opens with no aircraft selected.** You choose the registration you
+  are flying from the selector, which starts on *--- Select Aircraft ---* and is
+  highlighted until you pick one. Previously the first airframe in the fleet was
+  shown automatically, which is easy to mistake for the aircraft you are on.
 - **Easier to read at night.** Field labels and the PERFORMANCE / EQUIPMENT /
   REMARKS headings are larger and brighter, so the app is legible on a dark
   flight deck without turning the screen up.

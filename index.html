@@ -15,7 +15,7 @@
     Encryption needs a secure context (HTTPS), e.g. GitHub Pages.
   -->
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; script-src 'self' 'sha256-Pz5i/EttPZQ4UmiQ53vBPOHaMt7B7F+ioBagd/Rgiow='; style-src 'sha256-OW5KC07tKJuB9xHdCWrM5Ua1AYBspDxT3uHANGNdPJ8=' 'sha256-ZeKcezLVoSYVQn5q+IcWU3Yg/yJJ+m4r+mmBiOxLcUQ='; img-src 'self' data:; connect-src 'self' https://nom.telemetrydeck.com; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+        content="default-src 'none'; script-src 'self' 'sha256-1MrqZTionpJ5ZHXJ+or6p4UJjAPvz8so/9v/irg6Xh8='; style-src 'sha256-Ol/gmNVOYZwWHRttpPTrlf0dv8E+2ypcdd+i7GrZwts=' 'sha256-ZeKcezLVoSYVQn5q+IcWU3Yg/yJJ+m4r+mmBiOxLcUQ='; img-src 'self' data:; connect-src 'self' https://nom.telemetrydeck.com; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
   <title>A320 Fleet Configuration</title>
 
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -167,6 +167,41 @@
   .chip.na { background: rgba(255,255,255,0.12); color: var(--ink-soft); border: 1px solid var(--line); }
   .section.wide .grid { grid-template-columns: 1fr; }
   .remarks-box { padding: 11px 13px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; font-size: 14px; line-height: 1.5; white-space: pre-wrap; min-height: 44px; color: var(--ink); }
+
+  /* ---- Start screen (no aircraft chosen yet) ----
+     The viewer deliberately opens with NOTHING selected: a pilot should pick the
+     tail they are flying rather than be shown whichever airframe happens to be
+     first, which is easy to misread as "the" aircraft. Until they choose, the
+     stage holds the A320 and the selector is highlighted. */
+  .startwrap { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center;
+    justify-content: space-between; gap: 16px; width: 100%; align-self: stretch; }
+  .startmsg { text-align: center; color: var(--ink-soft); padding: 6vh 16px 0; max-width: 460px; margin: 0 auto; }
+  .startmsg h2 { margin: 0 0 8px; font-size: 19px; font-weight: 600; color: var(--ink); letter-spacing: .2px; }
+  .startmsg p { margin: 0; font-size: 13.5px; line-height: 1.6; }
+  .startmsg .hint { display: inline-flex; align-items: center; gap: 7px; margin-top: 14px;
+    font-size: 12.5px; color: var(--accent); }
+  .startmsg .hint svg { width: 15px; height: 15px; flex: 0 0 auto; }
+  /* The aircraft sits on the bottom edge of the first screen. It is decorative:
+     aria-hidden, and it must never push content or intercept a tap. */
+  .a320 { display: block; width: 100%; max-width: 1100px; height: auto; margin: 0 auto;
+    pointer-events: none; user-select: none; -webkit-user-select: none; opacity: .96;
+    /* The render carries a baked drop shadow, which reads as a grey smudge on a
+       dark page. Fade the lower fifth so it dissolves instead. The gear is
+       retracted, so nothing structural lives down there. */
+    -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent 92%);
+    mask-image: linear-gradient(to bottom, #000 70%, transparent 92%); }
+  main#stage.start { padding-bottom: 0; }            /* the jet sits on the bottom edge */
+  @media (max-height: 620px) { .startmsg { padding-top: 2vh; } }
+
+  /* Highlighted selector while nothing is chosen. Ring + slow pulse, stopped for
+     anyone who has asked for reduced motion. */
+  .pager select.pick-me { border-color: var(--accent); color: var(--ink);
+    box-shadow: 0 0 0 3px rgba(108,172,228,0.22); animation: pickpulse 2.2s ease-in-out infinite; }
+  @keyframes pickpulse {
+    0%, 100% { box-shadow: 0 0 0 3px rgba(108,172,228,0.18); }
+    50%      { box-shadow: 0 0 0 5px rgba(108,172,228,0.34); }
+  }
+  @media (prefers-reduced-motion: reduce) { .pager select.pick-me { animation: none; } }
 
   .empty { align-self: center; text-align: center; color: var(--ink-soft); margin-top: 16vh; max-width: 340px; }
   .empty h2 { color: var(--ink); font-weight: 600; }
@@ -528,7 +563,9 @@
       { section: "Remarks", wide: true, fields: [ { key: "remarks", label: "Remarks", type: "textarea" } ]}
     ];
 
-    var data = null, index = 0, source = null, lastSync = null, fingerprint = null, openTip = null;
+    /* index === -1 means no aircraft chosen yet — the viewer opens on the start
+       screen rather than preselecting a tail. See renderStage(). */
+    var data = null, index = -1, source = null, lastSync = null, fingerprint = null, openTip = null;
 
     /* ---- DOM helpers ---- */
     function el(t, o) { var e = document.createElement(t); o = o || {}; if (o.cls) e.className = o.cls; if (o.text !== undefined && o.text !== null) e.textContent = String(o.text); if (o.attrs) Object.keys(o.attrs).forEach(function (k) { e.setAttribute(k, o.attrs[k]); }); return e; }
@@ -647,18 +684,60 @@
       byId("appTitle").textContent = (data && data.meta.title) || "Fleet Configuration";
       var n = data ? data.aircraft.length : 0;
       var jump = byId("jump"); clear(jump);
-      if (data) data.aircraft.forEach(function (a, i) { var o = el("option", { text: (a.registration || "(no reg)"), attrs: { value: String(i) } }); if (i === index) o.selected = true; jump.appendChild(o); });
-      byId("pos").textContent = n ? (index + 1) + " / " + n : "0 / 0";
-      byId("jump").disabled = (n === 0);
+      if (data) {
+        var ph = el("option", { text: "--- Select Aircraft ---", attrs: { value: "-1" } });
+        if (index < 0) ph.selected = true;
+        jump.appendChild(ph);
+        data.aircraft.forEach(function (a, i) {
+          var o = el("option", { text: (a.registration || "(no reg)"), attrs: { value: String(i) } });
+          if (i === index) o.selected = true;
+          jump.appendChild(o);
+        });
+      }
+      byId("pos").textContent = n ? ((index < 0 ? "—" : String(index + 1)) + " / " + n) : "0 / 0";
+      jump.disabled = (n === 0);
+      /* Draw the eye to the selector until a tail has actually been chosen. */
+      jump.className = (n && index < 0) ? "pick-me" : "";
       byId("gateVer").textContent = data && data.meta.version ? ("v" + data.meta.version + (data.meta.updated ? " · " + fmtDMY(data.meta.updated) : "")) : "not loaded";
       byId("gateFp").textContent = fingerprint || "not loaded";
     }
     function renderStage() {
       closeTips();
-      var stage = byId("stage"); clear(stage);
+      var stage = byId("stage"); clear(stage); stage.className = "";
       if (!data || !data.aircraft.length) { var e = el("div", { cls: "empty" }); e.appendChild(el("h2", { text: "No fleet data" })); e.appendChild(el("p", { text: "Connect to the internet once to download and unlock the fleet." })); stage.appendChild(e); return; }
+      if (index < 0) { stage.className = "start"; stage.appendChild(buildStartScreen(data.aircraft.length)); return; }
       data.aircraft.forEach(function (a, i) { var s = buildSheet(a); if (i !== index) s.hidden = true; stage.appendChild(s); });
     }
+    function buildStartScreen(n) {
+      var wrap = el("div", { cls: "startwrap" });
+      var msg = el("div", { cls: "startmsg" });
+      msg.appendChild(el("h2", { text: "Select an aircraft" }));
+      msg.appendChild(el("p", { text: n === 1
+        ? "One airframe is loaded. Choose it from the selector above to see its configuration."
+        : "The fleet is unlocked. Choose the registration you are flying from the selector above." }));
+      var hint = el("span", { cls: "hint" });
+      var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("fill", "none");
+      svg.setAttribute("stroke", "currentColor"); svg.setAttribute("stroke-width", "2");
+      svg.setAttribute("stroke-linecap", "round"); svg.setAttribute("stroke-linejoin", "round");
+      svg.setAttribute("aria-hidden", "true");
+      var pth = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      pth.setAttribute("d", "M12 19V5M5 12l7-7 7 7");
+      svg.appendChild(pth); hint.appendChild(svg);
+      hint.appendChild(document.createTextNode(n + (n === 1 ? " aircraft in the fleet" : " aircraft in the fleet")));
+      msg.appendChild(hint);
+      wrap.appendChild(msg);
+
+      var img = el("img", { cls: "a320" });
+      img.src = "UI/A320-1.png";
+      img.alt = "";                 // decorative only
+      img.setAttribute("aria-hidden", "true");
+      img.setAttribute("draggable", "false");
+      img.width = 1332; img.height = 602;   // reserve space so nothing jumps as it loads
+      wrap.appendChild(img);
+      return wrap;
+    }
+
     function buildSheet(a) {
       var sheet = el("div", { cls: "sheet" });
       var head = el("div", { cls: "sheet-head" });
@@ -782,7 +861,7 @@
 
     function applyPlaintext(pt, src, syncedAtISO) {
       data = parseConfig(pt); source = src; lastSync = syncedAtISO ? new Date(syncedAtISO) : null;
-      if (index >= data.aircraft.length) index = 0;
+      if (index >= data.aircraft.length) index = -1;   // never fall back to an arbitrary tail
       return sha256Hex(pt).then(function (fp) { fingerprint = fp; render(); });
     }
 
@@ -915,7 +994,12 @@
       unlock(pw, false);
     }
 
-    function go(n) { if (!data || n < 0 || n >= data.aircraft.length) return; index = n; render(); }
+    function go(n) {
+      if (!data) return;
+      if (n < 0) { index = -1; render(); return; }        // back to "--- Select Aircraft ---"
+      if (n >= data.aircraft.length) return;
+      index = n; render();
+    }
 
     /* ---- ⌘K palette: jump to an aircraft by registration ---- */
     var cmdkSel = 0, cmdkHits = [];
