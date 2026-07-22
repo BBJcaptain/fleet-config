@@ -15,7 +15,7 @@
     Encryption needs a secure context (HTTPS), e.g. GitHub Pages.
   -->
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; script-src 'self' 'sha256-1MrqZTionpJ5ZHXJ+or6p4UJjAPvz8so/9v/irg6Xh8='; style-src 'sha256-Ol/gmNVOYZwWHRttpPTrlf0dv8E+2ypcdd+i7GrZwts=' 'sha256-ZeKcezLVoSYVQn5q+IcWU3Yg/yJJ+m4r+mmBiOxLcUQ='; img-src 'self' data:; connect-src 'self' https://nom.telemetrydeck.com; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+        content="default-src 'none'; script-src 'self' 'sha256-ZL4EdEYyoCbXORqSZo18ap+b7z5EvzhDjr9IrHNGmcQ='; style-src 'sha256-FX5hzS3bxF+VVejAom14YTehtBxszHu4fNSFH7CmH5g=' 'sha256-ZeKcezLVoSYVQn5q+IcWU3Yg/yJJ+m4r+mmBiOxLcUQ='; img-src 'self' data:; connect-src 'self' https://nom.telemetrydeck.com; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
   <title>A320 Fleet Configuration</title>
 
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -71,7 +71,7 @@
     z-index: -1;
     pointer-events: none;
     background:
-      linear-gradient(180deg, rgba(11,34,77,0.70) 0%, rgba(8,26,58,0.58) 45%, rgba(6,18,42,0.80) 100%),
+      linear-gradient(180deg, rgba(11,34,77,0.42) 0%, rgba(8,26,58,0.30) 45%, rgba(6,18,42,0.60) 100%),
       url("UI/background.jpg") center center / cover no-repeat,
       linear-gradient(180deg, #0b224d 0%, #081a3a 45%, #06122a 100%);
   }
@@ -168,6 +168,29 @@
   .section.wide .grid { grid-template-columns: 1fr; }
   .remarks-box { padding: 11px 13px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; font-size: 14px; line-height: 1.5; white-space: pre-wrap; min-height: 44px; color: var(--ink); }
 
+  /* ---- Aircraft-change feedback ----
+     Swapping tails is instant, which is good, but a silent swap is a real
+     hazard: a pilot can look away, change aircraft, look back and not register
+     that the numbers now belong to a different airframe. So the card announces
+     itself — one scan line sweeps top to bottom while the content settles in.
+     ~500 ms: long enough to be unmissable, short enough never to delay reading.
+     Anyone who has asked for reduced motion gets a static ring instead. */
+  .sheet.swept { position: relative; animation: cardin .26s ease-out both; }
+  @keyframes cardin { from { opacity: .5; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+  .sheet.swept::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 5;
+    background: linear-gradient(to bottom,
+      rgba(108,172,228,0) 40%, rgba(108,172,228,0.28) 47%,
+      rgba(180,220,255,0.55) 50%, rgba(108,172,228,0.28) 53%, rgba(108,172,228,0) 60%);
+    animation: scanline .5s cubic-bezier(.35,0,.35,1) both;
+  }
+  @keyframes scanline { from { transform: translateY(-100%); } to { transform: translateY(100%); } }
+  @media (prefers-reduced-motion: reduce) {
+    .sheet.swept { animation: none; }
+    .sheet.swept::after { animation: none; background: none;
+      box-shadow: inset 0 0 0 2px var(--accent); }
+  }
+
   /* ---- Start screen (no aircraft chosen yet) ----
      The viewer deliberately opens with NOTHING selected: a pilot should pick the
      tail they are flying rather than be shown whichever airframe happens to be
@@ -178,12 +201,9 @@
   .startmsg { text-align: center; color: var(--ink-soft); padding: 6vh 16px 0; max-width: 460px; margin: 0 auto; }
   .startmsg h2 { margin: 0 0 8px; font-size: 19px; font-weight: 600; color: var(--ink); letter-spacing: .2px; }
   .startmsg p { margin: 0; font-size: 13.5px; line-height: 1.6; }
-  .startmsg .hint { display: inline-flex; align-items: center; gap: 7px; margin-top: 14px;
-    font-size: 12.5px; color: var(--accent); }
-  .startmsg .hint svg { width: 15px; height: 15px; flex: 0 0 auto; }
   /* The aircraft sits on the bottom edge of the first screen. It is decorative:
      aria-hidden, and it must never push content or intercept a tap. */
-  .a320 { display: block; width: 100%; max-width: 1100px; height: auto; margin: 0 auto;
+  .a320 { display: block; width: 66vw; max-width: 1332px; height: auto; margin: 0 auto;
     pointer-events: none; user-select: none; -webkit-user-select: none; opacity: .96;
     /* The render carries a baked drop shadow, which reads as a grey smudge on a
        dark page. Fade the lower fifth so it dissolves instead. The gear is
@@ -685,7 +705,7 @@
       var n = data ? data.aircraft.length : 0;
       var jump = byId("jump"); clear(jump);
       if (data) {
-        var ph = el("option", { text: "--- Select Aircraft ---", attrs: { value: "-1" } });
+        var ph = el("option", { text: "Select Aircraft", attrs: { value: "-1" } });
         if (index < 0) ph.selected = true;
         jump.appendChild(ph);
         data.aircraft.forEach(function (a, i) {
@@ -705,27 +725,20 @@
       closeTips();
       var stage = byId("stage"); clear(stage); stage.className = "";
       if (!data || !data.aircraft.length) { var e = el("div", { cls: "empty" }); e.appendChild(el("h2", { text: "No fleet data" })); e.appendChild(el("p", { text: "Connect to the internet once to download and unlock the fleet." })); stage.appendChild(e); return; }
-      if (index < 0) { stage.className = "start"; stage.appendChild(buildStartScreen(data.aircraft.length)); return; }
-      data.aircraft.forEach(function (a, i) { var s = buildSheet(a); if (i !== index) s.hidden = true; stage.appendChild(s); });
+      if (index < 0) { stage.className = "start"; stage.appendChild(buildStartScreen()); return; }
+      data.aircraft.forEach(function (a, i) {
+        var sh = buildSheet(a);
+        if (i !== index) sh.hidden = true;
+        else if (sweepNext) sh.className += " swept";
+        stage.appendChild(sh);
+      });
+      sweepNext = false;
     }
-    function buildStartScreen(n) {
+    function buildStartScreen() {
       var wrap = el("div", { cls: "startwrap" });
       var msg = el("div", { cls: "startmsg" });
       msg.appendChild(el("h2", { text: "Select an aircraft" }));
-      msg.appendChild(el("p", { text: n === 1
-        ? "One airframe is loaded. Choose it from the selector above to see its configuration."
-        : "The fleet is unlocked. Choose the registration you are flying from the selector above." }));
-      var hint = el("span", { cls: "hint" });
-      var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("fill", "none");
-      svg.setAttribute("stroke", "currentColor"); svg.setAttribute("stroke-width", "2");
-      svg.setAttribute("stroke-linecap", "round"); svg.setAttribute("stroke-linejoin", "round");
-      svg.setAttribute("aria-hidden", "true");
-      var pth = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      pth.setAttribute("d", "M12 19V5M5 12l7-7 7 7");
-      svg.appendChild(pth); hint.appendChild(svg);
-      hint.appendChild(document.createTextNode(n + (n === 1 ? " aircraft in the fleet" : " aircraft in the fleet")));
-      msg.appendChild(hint);
+      msg.appendChild(el("p", { text: "The encrypted fleet configuration database is unlocked." }));
       wrap.appendChild(msg);
 
       var img = el("img", { cls: "a320" });
@@ -994,11 +1007,13 @@
       unlock(pw, false);
     }
 
+    var sweepNext = false;   // set by go(); consumed by renderStage()
+
     function go(n) {
       if (!data) return;
       if (n < 0) { index = -1; render(); return; }        // back to "--- Select Aircraft ---"
       if (n >= data.aircraft.length) return;
-      index = n; render();
+      index = n; sweepNext = true; render();
     }
 
     /* ---- ⌘K palette: jump to an aircraft by registration ---- */
