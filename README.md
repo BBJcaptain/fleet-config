@@ -200,6 +200,16 @@ ordinary update, **+1.0** for a major one.
 
 ### All apps 1.0 — 21-07-2026
 
+- **Night-flight legibility.** Field labels and the PERFORMANCE / EQUIPMENT /
+  REMARKS headings were sized for a lit cabin and read as grey mush on a dark
+  flight deck. Labels are larger and closer to white, headings are noticeably
+  bigger, and the Remarks text is up a point. The iPad breakpoint used to *shrink*
+  labels to 10.5 px to squeeze a card onto one screen — that was the flight-deck
+  case and the worst offender, so it is raised too. The card was already a little
+  taller than an iPad screen before this change; it now scrolls about 34 px more.
+- Background image re-encoded again: 99 KB → **36 KB**, no visible difference
+  behind the scrim. It is in the offline precache, so this is a one-time
+  download every pilot pays on whatever connection they have.
 - **The starfield is now the backdrop of all three apps**, not just the
   acknowledgement page. It is drawn as a fixed layer behind the content with a
   scrim over it, so it never touches the legibility of a value: aircraft cards

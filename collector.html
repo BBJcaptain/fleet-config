@@ -50,7 +50,7 @@
     /* Palette shared with the viewer and editor — same product, same colours. */
     :root { --blue-bg:#081a3a; --blue-deep:#0a1f45; --blue-bar:#0b224d;
       --panel:rgba(255,255,255,0.06); --panel-2:rgba(255,255,255,0.12); --line:rgba(255,255,255,0.16);
-      --ink:#eaf1fb; --ink-soft:rgba(234,241,251,0.66); --accent:#6cace4; --good:#5ad19b; --amber:#ffcf6b; --danger:#ff8a90;
+      --ink:#eaf1fb; --ink-soft:rgba(234,241,251,0.66); --ink-label:rgba(234,241,251,0.90); --accent:#6cace4; --good:#5ad19b; --amber:#ffcf6b; --danger:#ff8a90;
       --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace; --sans:"Helvetica Neue",Helvetica,Arial,"Segoe UI",system-ui,sans-serif;
       --display:"Futura","Avenir Next","Century Gothic",var(--sans); }
     * { box-sizing: border-box; }
@@ -100,7 +100,8 @@
     .grp { margin-top: 12px; }
     .grp:first-child { margin-top: 0; }
     /* Section heading with the viewer's short accent rule underneath */
-    .grp h3 { margin: 0 0 12px; font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase;
+    /* Night-flight legibility — matches the viewer. */
+    .grp h3 { margin: 0 0 12px; font-size: 13.5px; letter-spacing: 1.2px; text-transform: uppercase;
       color: var(--ink); position: relative; padding-bottom: 9px; }
     .grp h3::after { content: ""; position: absolute; left: 0; bottom: 0; width: 28px; height: 3px;
       background: var(--accent); border-radius: 2px; }
@@ -109,7 +110,7 @@
     @media (min-width: 760px) { .grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); } }
     .fld { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
     .fld { position: relative; }
-    .fld label { font-size: 11px; color: var(--ink-soft); display: flex; align-items: center; gap: 6px; }
+    .fld label { font-size: 12.5px; color: var(--ink-label); display: flex; align-items: center; gap: 6px; }
     /* Source tooltips — same visual language as the viewer and editor */
     .tip-btn { width: 15px; height: 15px; flex: 0 0 auto; border-radius: 50%; border: 1px solid var(--line);
       background: transparent; color: var(--accent); font-size: 10px; font-weight: 700; font-style: italic;
