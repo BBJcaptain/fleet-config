@@ -34,7 +34,7 @@ window.FLEET_SOURCES = {
   landing_tailwind_kts:    "FCOM / Limitations / Aircraft General / Operational Parameters / Airport Operations and Wind Limitations",
   narrow_runway_approved:  "FCOM / Limitations / Aircraft General / Operational Parameters / Airport Operations and Wind Limitations",
   se_taxi_no_apu:          "FCOM / General Information/ Aircraft Config Summary",
-  max_altitude_autoland:   "Source Pending",
+  max_altitude_autoland:   "FCOM / LIM / AFS / 20 automatic landing",
   noise_chapter:           "Centrik / Operations / Aircraft / Aircraft Documents / Noise Certicifate",
 
   /* ---- Equipment ---- */
